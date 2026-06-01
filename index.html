@@ -1,0 +1,1719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeonTech — Premium Gaming Store</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="progress-bar"></div> 
+ <!-- ═══ Navigation ═══════════════════════════════════════════════ -->
+   
+  <header class="nav" role="banner">
+
+    <a href="index.html" class="nav-logo" aria-label="NeonTech Home">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <div class="logo-text">Neon<span>Tech</span></div>
+    </a>
+
+    <form class="nav-search" role="search" action="" method="GET">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="search" name="q" placeholder="Search products, brands…" aria-label="Search products" />
+    </form>
+
+    <nav class="nav-actions" aria-label="Quick actions">
+      <a href="#" class="nav-btn" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </a>
+      <a href="#" class="nav-btn" id="user-account-btn" aria-label="User account">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </a>
+      <a href="#" class="nav-btn" aria-label="Shopping cart, 3 items">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span class="cart-badge" aria-hidden="true">3</span>
+      </a>
+      <a href="#" id="light-mode" class="nav-btn" aria-label="Light mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v2"/><path d="M12 20v2"/>
+          <path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/>
+          <path d="M2 12h2"/><path d="M20 12h2"/>
+          <path d="m4.93 19.07 1.41-1.41"/><path d="m17.66 6.34 1.41-1.41"/>
+          <circle cx="12" cy="12" r="4"/>
+        </svg>
+      </a>
+    </nav>
+
+  </header>
+
+  <!-- ═══ Page Layout ═══════════════════════════════════════════════ -->
+  <div class="page">
+
+    <!-- ═══ Sidebar ═══════════════════════════════════════════════ -->
+    <aside class="sidebar" aria-label="Product filters">
+      <div class="sidebar-mobile-header" style="display: none; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 15px;">
+        <h3 style="font-family: monospace; font-size: 1.1rem; color: var(--text-primary); margin: 0;">[FILTERS]</h3>
+        <button class="sidebar-close-btn" aria-label="Close filters" style="background: transparent; border: none; color: var(--neon); font-size: 1.5rem; cursor: pointer; padding: 0 5px; line-height: 1;">&times;</button>
+      </div>
+
+      <section class="sidebar-section">
+        <h2 class="sidebar-title">Categories</h2>
+        <a href="#" class="filter-item active" aria-current="page">
+          <span>
+            <span class="filter-icon icon-all" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </span>All Products
+          </span>
+          <span class="filter-count">248</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-controllers" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="6" y1="12" x2="10" y2="12"></line>
+                <line x1="8" y1="10" x2="8" y2="14"></line>
+                <line x1="15" y1="13" x2="15.01" y2="13"></line>
+                <line x1="18" y1="11" x2="18.01" y2="11"></line>
+                <rect x="2" y="6" width="20" height="12" rx="3"></rect>
+              </svg>
+            </span>Controllers
+          </span>
+          <span class="filter-count">42</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-monitors" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </span>Monitors
+          </span>
+          <span class="filter-count">31</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-headsets" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+              </svg>
+            </span>Headsets
+          </span>
+          <span class="filter-count">57</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-keyboards" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect>
+                <line x1="6" y1="8" x2="6.01" y2="8"></line>
+                <line x1="10" y1="8" x2="10.01" y2="8"></line>
+                <line x1="14" y1="8" x2="14.01" y2="8"></line>
+                <line x1="18" y1="8" x2="18.01" y2="8"></line>
+                <line x1="6" y1="12" x2="6.01" y2="12"></line>
+                <line x1="18" y1="12" x2="18.01" y2="12"></line>
+                <line x1="7" y1="16" x2="17" y2="16"></line>
+                <line x1="10" y1="12" x2="14" y2="12"></line>
+              </svg>
+            </span>Keyboards
+          </span>
+          <span class="filter-count">64</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-mice" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="7"></rect>
+                <path d="M12 6v6"></path>
+              </svg>
+            </span>Mice
+          </span>
+          <span class="filter-count">38</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-laptops" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="4" width="20" height="12" rx="2" ry="2"></rect>
+                <line x1="2" y1="20" x2="22" y2="20"></line>
+                <line x1="12" y1="16" x2="12" y2="20"></line>
+              </svg>
+            </span>Laptops
+          </span>
+          <span class="filter-count">16</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-gpu" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+                <line x1="9" y1="1" x2="9" y2="4"></line>
+                <line x1="15" y1="1" x2="15" y2="4"></line>
+                <line x1="9" y1="20" x2="9" y2="23"></line>
+                <line x1="15" y1="20" x2="15" y2="23"></line>
+                <line x1="20" y1="9" x2="23" y2="9"></line>
+                <line x1="20" y1="15" x2="23" y2="15"></line>
+                <line x1="1" y1="9" x2="4" y2="9"></line>
+                <line x1="1" y1="15" x2="4" y2="15"></line>
+              </svg>
+            </span>Graphics Cards
+          </span>
+          <span class="filter-count">12</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-vr" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 10h20M2 14h20M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/>
+                <circle cx="8" cy="12" r="2"/>
+                <circle cx="16" cy="12" r="2"/>
+              </svg>
+            </span>VR Headsets
+          </span>
+          <span class="filter-count">8</span>
+        </a>
+        <a href="#" class="filter-item">
+          <span>
+            <span class="filter-icon icon-chairs" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M7 3h10v10H7zM4 13h16v3H4zM6 16l-2 5M18 16l2 5M12 16v3M9 19h6"/>
+              </svg>
+            </span>Gaming Chairs
+          </span>
+          <span class="filter-count">14</span>
+        </a>
+      </section>
+
+      <section class="sidebar-section">
+        <h2 class="sidebar-title">Price Range</h2>
+        <div class="price-range">
+          <div class="price-labels"><span>$0</span><span class="price-val">$560</span></div>
+          <input type="range" class="price-slider" min="0" max="750" value="560" oninput="this.previousElementSibling.querySelector('.price-val').textContent = '$' + this.value" aria-label="Price range filter" />
+        </div>
+      </section>
+
+      <section class="sidebar-section">
+        <h2 class="sidebar-title">Brands</h2>
+        <label class="brand-item">
+          <input type="checkbox" class="filter-checkbox" name="brand" value="Razer" checked />
+          <span class="brand-checkbox" aria-hidden="true"></span>
+          Razer
+        </label>
+        <label class="brand-item">
+          <input type="checkbox" class="filter-checkbox" name="brand" value="SteelSeries" checked />
+          <span class="brand-checkbox" aria-hidden="true"></span>
+          SteelSeries
+        </label>
+        <label class="brand-item">
+          <input type="checkbox" class="filter-checkbox" name="brand" value="Logitech G" />
+          <span class="brand-checkbox" aria-hidden="true"></span>
+          Logitech G
+        </label>
+        <label class="brand-item">
+          <input type="checkbox" class="filter-checkbox" name="brand" value="HyperX" />
+          <span class="brand-checkbox" aria-hidden="true"></span>
+          HyperX
+        </label>
+        <label class="brand-item">
+          <input type="checkbox" class="filter-checkbox" name="brand" value="Corsair" />
+          <span class="brand-checkbox" aria-hidden="true"></span>
+          Corsair
+        </label>
+        <label class="brand-item">
+          <input type="checkbox" class="filter-checkbox" name="brand" value="ASUS ROG" />
+          <span class="brand-checkbox" aria-hidden="true"></span>
+          ASUS ROG
+        </label>
+      </section>
+
+      <section class="sidebar-section">
+        <h2 class="sidebar-title">Rating</h2>
+        <label class="brand-item">
+          <input type="checkbox" class="filter-checkbox" name="rating" value="4" checked />
+          <span class="brand-checkbox" aria-hidden="true"></span>
+          <span class="stars" aria-label="4 stars and above">
+            <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+            <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+            <span class="star">&#9733;</span>
+          </span>
+          &amp; up
+        </label>
+        <label class="brand-item">
+          <input type="checkbox" class="filter-checkbox" name="rating" value="3" />
+          <span class="brand-checkbox" aria-hidden="true"></span>
+          <span class="stars" aria-label="3 stars and above">
+            <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+            <span class="star filled">&#9733;</span><span class="star">&#9733;</span>
+            <span class="star">&#9733;</span>
+          </span>
+          &amp; up
+        </label>
+      </section>
+
+    </aside>
+
+    <!-- ═══ Main Content ══════════════════════════════════════════ -->
+    <main class="main" id="main-content">
+
+      <div class="catalog-header">
+        <div>
+          <h1 class="catalog-title">Gaming <span>Essentials</span></h1>
+          <p class="catalog-meta">248 products found &mdash; Showing 1&ndash;6</p>
+        </div>
+        <div class="catalog-controls">
+          <button class="filter-toggle-btn" aria-label="Filter products">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; margin-right: 6px;">
+              <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+            </svg>
+            Filters
+          </button>
+          <select class="sort-select" aria-label="Sort products">
+            <option>Featured</option>
+            <option>Price: Low to High</option>
+            <option>Price: High to Low</option>
+            <option>Top Rated</option>
+            <option>Newest</option>
+          </select>
+          <div class="view-toggle" role="group" aria-label="View layout">
+            <label class="view-btn" aria-label="Grid view">
+              <input type="radio" name="layout-view" class="view-radio-hidden" value="grid" checked />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+              </svg>
+            </label>
+            <label class="view-btn" aria-label="List view">
+              <input type="radio" name="layout-view" class="view-radio-hidden" value="list" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/>
+                <line x1="3" y1="18" x2="3.01" y2="18"/>
+              </svg>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="active-filters" aria-label="Active filters">
+        <div class="filter-chip">Razer <span class="remove" aria-label="Remove filter">&#10005;</span></div>
+        <div class="filter-chip">SteelSeries <span class="remove" aria-label="Remove filter">&#10005;</span></div>
+        <div class="filter-chip">4&#9733; &amp; up <span class="remove" aria-label="Remove filter">&#10005;</span></div>
+      </div>
+       <button class="Up" aria-label="Scroll to top" title="Scroll to top">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+           <polyline points="18 15 12 9 6 15"></polyline>
+         </svg>
+       </button>
+
+      <!-- Product Grid -->
+      <section class="product-grid" aria-label="Products">
+
+        <!-- Featured Banner -->
+        <article class="featured-banner" aria-label="Featured deal">
+          <div class="featured-content">
+            <div class="featured-tag">Limited Drop</div>
+            <h2 class="featured-title">Razer BlackWidow V4 Pro &mdash; Phantom Edition</h2>
+            <p class="featured-sub">Mechanical switches &bull; RGB Chroma &bull; Tactile feedback &bull; Only 200 units left</p>
+          </div>
+          <div class="featured-actions">
+            <button class="btn-primary">Shop Now</button>
+            <button class="btn-ghost">Learn More</button>
+          </div>
+        </article>
+
+        <!-- Card 1 — Razer Controller -->
+        <article class="product-card">
+          <span class="card-badge badge-new">New</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-controller.html"><img src="./images/controller.png" alt="Razer Wolverine V3 Pro Wireless"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Controllers</div>
+            <h3 class="card-title"><a href="product-controller.html">Razer Wolverine V3 Pro Wireless</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.8 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(2,341)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$199.99</span>
+              <span class="price-current">$159.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 2 — SteelSeries Controller -->
+        <article class="product-card">
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-controller.html"><img src="./images/controller_steelseries.png" alt="SteelSeries Stratus Duo"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Controllers</div>
+            <h3 class="card-title"><a href="product-controller.html">SteelSeries Stratus Duo Wireless</a></h3>
+            <div class="card-rating">
+              <div class="stars-container">
+         <span class="star" data-index="1">★</span>
+    <span class="star" data-index="2">★</span>
+    <span class="star" data-index="3">★</span>
+    <span class="star" data-index="4">★</span>
+    <span class="star" data-index="5">★</span>
+    </div>  
+              <span class="rating-count">(1,120)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$59.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 3 — SteelSeries Headset -->
+        <article class="product-card">
+          <span class="card-badge badge-hot">Hot</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-headset.html"><img src="./images/headset.png" alt="SteelSeries Arctis Nova Pro Wireless"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Headsets</div>
+            <h3 class="card-title"><a href="product-headset.html">SteelSeries Arctis Nova Pro Wireless</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.9 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span>
+              </div>
+              <span class="rating-count">(5,812)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$349.99</span>
+              <span class="price-current">$279.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 4 — Razer Headset -->
+        <article class="product-card">
+          <span class="card-badge badge-sale">-20%</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-headset.html"><img src="./images/headset_razer.png" alt="Razer BlackShark V2 Pro"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Headsets</div>
+            <h3 class="card-title"><a href="product-headset.html">Razer BlackShark V2 Pro Wireless</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.7 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(4,198)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$179.99</span>
+              <span class="price-current">$143.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 5 — Logitech Keyboard -->
+        <article class="product-card">
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-details.html"><img src="./images/keyboard.png" alt="Logitech G915 TKL Lightspeed"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Keyboards</div>
+            <h3 class="card-title"><a href="product-details.html">Logitech G915 TKL Lightspeed</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.7 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(3,290)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$229.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 6 — SteelSeries Keyboard -->
+        <article class="product-card">
+          <span class="card-badge badge-new">New</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-details.html"><img src="./images/keyboard_steelseries.png" alt="SteelSeries Apex Pro TKL"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Keyboards</div>
+            <h3 class="card-title"><a href="product-details.html">SteelSeries Apex Pro TKL Keyboard</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.8 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(2,560)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$189.99</span>
+              <span class="price-current">$169.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 7 — Razer Mouse -->
+        <article class="product-card">
+          <span class="card-badge badge-sale">-30%</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-mouse.html"><img src="./images/mouse.png" alt="Razer DeathAdder V3 HyperSpeed"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Mice</div>
+            <h3 class="card-title"><a href="product-mouse.html">Razer DeathAdder V3 HyperSpeed</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.6 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(7,104)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$99.99</span>
+              <span class="price-current">$69.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 8 — Logitech Mouse -->
+        <article class="product-card">
+          <span class="card-badge badge-hot">Hot</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-mouse.html"><img src="./images/mouse_logitech.png" alt="Logitech G502 X Plus Wireless"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Mice</div>
+            <h3 class="card-title"><a href="product-mouse.html">Logitech G502 X Plus Wireless</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.8 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(5,112)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$159.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 9 — ASUS Monitor -->
+        <article class="product-card">
+          <span class="card-badge badge-new">New</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-monitor.html"><img src="./images/monitor.png" alt="ASUS ROG Swift 360Hz OLED"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Monitors</div>
+            <h3 class="card-title"><a href="product-monitor.html">ASUS ROG Swift 360Hz OLED 27"</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.8 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(1,567)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$899.99</span>
+              <span class="price-current">$749.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 10 — MSI Monitor -->
+        <article class="product-card">
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-monitor.html"><img src="./images/monitor_msi.png" alt="MSI Optix MPG341QR Ultrawide"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Monitors</div>
+            <h3 class="card-title"><a href="product-monitor.html">MSI Optix MPG341QR 34" Ultrawide</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.6 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(945)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$599.99</span>
+              <span class="price-current">$499.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 11 — Razer Laptop -->
+        <article class="product-card">
+          <span class="card-badge badge-hot">Hot</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-laptop.html"><img src="./images/laptop.jpg" alt="Razer Blade 16 RTX 5090 Ultra"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Laptops</div>
+            <h3 class="card-title"><a href="product-laptop.html">Razer Blade 16 RTX 5090 Ultra</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.9 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span>
+              </div>
+              <span class="rating-count">(892)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$4,999.99</span>
+              <span class="price-current">$3,999.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 12 — ASUS Laptop -->
+        <article class="product-card">
+          <span class="card-badge badge-new">New</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-laptop.html"><img src="./images/laptop_asus.png" alt="ASUS ROG Zephyrus G14"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Laptops</div>
+            <h3 class="card-title"><a href="product-laptop.html">ASUS ROG Zephyrus G14 Laptop</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.8 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(1,105)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$1,899.99</span>
+              <span class="price-current">$1,599.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 13 — NVIDIA GPU -->
+        <article class="product-card">
+          <span class="card-badge badge-hot">Hot</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-gpu.html"><img src="./images/gpu.png" alt="NVIDIA GeForce RTX 5090 FE"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Graphics Cards</div>
+            <h3 class="card-title"><a href="product-gpu.html">NVIDIA GeForce RTX 5090 FE</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="5 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span>
+              </div>
+              <span class="rating-count">(341)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$2,499.99</span>
+              <span class="price-current">$2,299.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 14 — ASUS GPU -->
+        <article class="product-card">
+          <span class="card-badge badge-new">New</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-gpu.html"><img src="./images/gpu_asus.png" alt="ASUS ROG Matrix RTX 4090"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Graphics Cards</div>
+            <h3 class="card-title"><a href="product-gpu.html">ASUS ROG Matrix RTX 4090</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.9 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span>
+              </div>
+              <span class="rating-count">(89)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$1,999.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 15 — Meta VR -->
+        <article class="product-card">
+          <span class="card-badge badge-sale">-15%</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-vr.html"><img src="./images/vr.png" alt="Meta Quest 3 Pro VR"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">VR Headsets</div>
+            <h3 class="card-title"><a href="product-vr.html">Meta Quest 3 Pro VR Headset</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.7 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(1,432)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$649.99</span>
+              <span class="price-current">$549.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 16 — HTC VR -->
+        <article class="product-card">
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-vr.html"><img src="./images/vr_htc.png" alt="HTC Vive Pro 2 System"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">VR Headsets</div>
+            <h3 class="card-title"><a href="product-vr.html">HTC Vive Pro 2 System</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.6 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(512)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$799.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 17 — Secretlab Chair -->
+        <article class="product-card">
+          <span class="card-badge badge-new">New</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-chair.html"><img src="./images/chair.png" alt="Secretlab Titan Evo 2026"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Gaming Chairs</div>
+            <h3 class="card-title"><a href="product-chair.html">Secretlab Titan Evo 2026</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.9 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span>
+              </div>
+              <span class="rating-count">(2,819)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$629.99</span>
+              <span class="price-current">$549.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 18 — Razer Chair -->
+        <article class="product-card">
+          <span class="card-badge badge-hot">Hot</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-chair.html"><img src="./images/chair_razer.png" alt="Razer Iskur V2 Gaming Chair"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Gaming Chairs</div>
+            <h3 class="card-title"><a href="product-chair.html">Razer Iskur V2 Gaming Chair</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.8 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(984)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$499.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 19 — Logitech Controller -->
+        <article class="product-card">
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-controller.html"><img src="./images/controller_logitech.png" alt="Logitech G F710 Wireless Controller"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Controllers</div>
+            <h3 class="card-title"><a href="product-controller.html">Logitech G F710 Wireless Controller</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.5 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(412)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">3</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$49.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 20 — Logitech Headset -->
+        <article class="product-card">
+          <span class="card-badge badge-new">New</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-headset.html"><img src="./images/headset_logitech.png" alt="Logitech G Pro X 2 LightSpeed"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Headsets</div>
+            <h3 class="card-title"><a href="product-headset.html">Logitech G Pro X 2 Wireless</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.8 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(912)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">6</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$249.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 21 — Corsair Keyboard -->
+        <article class="product-card">
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-details.html"><img src="./images/keyboard_corsair.png" alt="Corsair K70 RGB PRO Mechanical Keyboard"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Keyboards</div>
+            <h3 class="card-title"><a href="product-details.html">Corsair K70 RGB PRO Keyboard</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.7 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(812)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">4</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$169.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 22 — Corsair Mouse -->
+        <article class="product-card">
+          <span class="card-badge badge-sale">-10%</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-mouse.html"><img src="./images/mouse_corsair.png" alt="Corsair Dark Core RGB Pro Wireless Mouse"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Mice</div>
+            <h3 class="card-title"><a href="product-mouse.html">Corsair Dark Core RGB Pro Mouse</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.6 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(324)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">2</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-original">$99.99</span>
+              <span class="price-current">$89.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 23 — Corsair Monitor -->
+        <article class="product-card">
+          <span class="card-badge badge-hot">Hot</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-monitor.html"><img src="./images/monitor_corsair.png" alt="Corsair XENEON FLEX OLED 45"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Monitors</div>
+            <h3 class="card-title"><a href="product-monitor.html">Corsair XENEON FLEX OLED 45"</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.9 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span>
+              </div>
+              <span class="rating-count">(112)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">8</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$1,499.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+        <!-- Card 24 — Razer Keyboard -->
+        <article class="product-card">
+          <span class="card-badge badge-new">New</span>
+          <label class="card-wishlist" aria-label="Add to wishlist">
+            <input type="checkbox" class="wishlist-checkbox-hidden" />
+            <span class="heart-icon">&#9825;</span>
+          </label>
+          <label class="card-compare" aria-label="Compare product">
+            <input type="checkbox" class="compare-checkbox-hidden" />
+            <svg class="compare-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="16 3 21 8 16 13" />
+              <line x1="21" y1="8" x2="9" y2="8" />
+              <polyline points="8 21 3 16 8 11" />
+              <line x1="3" y1="16" x2="15" y2="16" />
+            </svg>
+          </label>
+          <div class="card-image" aria-hidden="true">
+            <a href="product-details.html"><img src="./images/keyboard_razer.png" alt="Razer Huntsman V3 Pro TKL"></a>
+          </div>
+          <div class="card-body">
+            <div class="card-category">Keyboards</div>
+            <h3 class="card-title"><a href="product-details.html">Razer Huntsman V3 Pro Keyboard</a></h3>
+            <div class="card-rating">
+              <div class="stars" aria-label="4.8 out of 5 stars">
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star filled">&#9733;</span><span class="star filled">&#9733;</span>
+                <span class="star half">&#9733;</span>
+              </div>
+              <span class="rating-count">(641)</span>
+            </div>
+            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+          </div>
+          <div class="card-footer">
+            <div class="card-pricing">
+              <span class="price-current">$219.99</span>
+            </div>
+            <button class="btn-cart"><span>Add to Cart</span></button>
+          </div>
+        </article>
+
+      </section><!-- /product-grid -->
+
+    </main>
+  </div><!-- /page -->
+
+  <!-- ═══ Features Strip ════════════════════════════════════════════ -->
+  <section class="features-strip" aria-label="Store features">
+
+    <div class="feature-item">
+      <div class="feature-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </div>
+      <div class="feature-text">
+        <div class="feature-text-title">Free Shipping</div>
+        <div class="feature-text-sub">On all orders over $49</div>
+      </div>
+    </div>
+
+    <div class="feature-item">
+      <div class="feature-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="feature-text">
+        <div class="feature-text-title">Secure Checkout</div>
+        <div class="feature-text-sub">256-bit SSL encryption</div>
+      </div>
+    </div>
+
+    <div class="feature-item">
+      <div class="feature-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      </div>
+      <div class="feature-text">
+        <div class="feature-text-title">30-Day Returns</div>
+        <div class="feature-text-sub">No questions asked</div>
+      </div>
+    </div>
+
+    <div class="feature-item">
+      <div class="feature-icon-wrap" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div class="feature-text">
+        <div class="feature-text-title">24/7 Support</div>
+        <div class="feature-text-sub">Gamer-first help desk</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ═══ Stats Row ═════════════════════════════════════════════════ -->
+  <section class="stats-row" aria-label="Store statistics">
+    <div class="stat-item">
+      <div class="stat-number">2.4M+</div>
+      <div class="stat-label">Orders Shipped</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">98%</div>
+      <div class="stat-label">Satisfaction Rate</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">248</div>
+      <div class="stat-label">Premium Products</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-number">60+</div>
+      <div class="stat-label">Partner Brands</div>
+    </div>
+  </section>
+
+  <!-- ═══ Brands Marquee ════════════════════════════════════════════ -->
+  <section class="brands-section" aria-label="Partner brands">
+    <p class="brands-label">Trusted by over 60 gaming brands worldwide</p>
+    <div class="marquee-wrapper">
+      <div class="marquee-track" aria-hidden="true">
+        <div class="brand-pill"><span class="b-dot"></span>Razer</div>
+        <div class="brand-pill"><span class="b-dot"></span>SteelSeries</div>
+        <div class="brand-pill"><span class="b-dot"></span>Logitech G</div>
+        <div class="brand-pill"><span class="b-dot"></span>HyperX</div>
+        <div class="brand-pill"><span class="b-dot"></span>Corsair</div>
+        <div class="brand-pill"><span class="b-dot"></span>ASUS ROG</div>
+        <div class="brand-pill"><span class="b-dot"></span>MSI Gaming</div>
+        <div class="brand-pill"><span class="b-dot"></span>Alienware</div>
+        <div class="brand-pill"><span class="b-dot"></span>Zowie</div>
+        <div class="brand-pill"><span class="b-dot"></span>Glorious</div>
+        <div class="brand-pill"><span class="b-dot"></span>Endgame Gear</div>
+        <div class="brand-pill"><span class="b-dot"></span>Fnatic Gear</div>
+        <!-- Duplicate set for seamless loop -->
+        <div class="brand-pill"><span class="b-dot"></span>Razer</div>
+        <div class="brand-pill"><span class="b-dot"></span>SteelSeries</div>
+        <div class="brand-pill"><span class="b-dot"></span>Logitech G</div>
+        <div class="brand-pill"><span class="b-dot"></span>HyperX</div>
+        <div class="brand-pill"><span class="b-dot"></span>Corsair</div>
+        <div class="brand-pill"><span class="b-dot"></span>ASUS ROG</div>
+        <div class="brand-pill"><span class="b-dot"></span>MSI Gaming</div>
+        <div class="brand-pill"><span class="b-dot"></span>Alienware</div>
+        <div class="brand-pill"><span class="b-dot"></span>Zowie</div>
+        <div class="brand-pill"><span class="b-dot"></span>Glorious</div>
+        <div class="brand-pill"><span class="b-dot"></span>Endgame Gear</div>
+        <div class="brand-pill"><span class="b-dot"></span>Fnatic Gear</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Newsletter CTA ════════════════════════════════════════════ -->
+  <section class="newsletter-section" aria-labelledby="nl-heading">
+    <div class="newsletter-eyebrow"><span class="nl-dot" aria-hidden="true"></span>Members Only</div>
+    <h2 class="newsletter-title" id="nl-heading">Level Up Your <span>Gear Game</span></h2>
+    <p class="newsletter-sub">
+      Join 180,000+ gamers getting exclusive deals, early access drops,
+      and pro setup guides straight to their inbox.
+    </p>
+    <form class="newsletter-form" action="" method="POST" aria-label="Newsletter signup">
+      <input type="email" name="email" required placeholder="Enter your email address…" aria-label="Email address" />
+      <button type="submit">Subscribe</button>
+    </form>
+    <p class="newsletter-note">No spam. Unsubscribe anytime.</p>
+    <div class="newsletter-perks">
+      <div class="nl-perk"><span class="nl-perk-icon" aria-hidden="true">&#10003;</span>Early access to drops</div>
+      <div class="nl-perk"><span class="nl-perk-icon" aria-hidden="true">&#10003;</span>Members-only discounts</div>
+      <div class="nl-perk"><span class="nl-perk-icon" aria-hidden="true">&#10003;</span>Free setup guides</div>
+      <div class="nl-perk"><span class="nl-perk-icon" aria-hidden="true">&#10003;</span>Pro player picks</div>
+    </div>
+  </section>
+
+  <!-- ═══ Rich Footer ════════════════════════════════════════════════ -->
+  <footer class="site-footer" role="contentinfo">
+
+    <div class="footer-top">
+
+      <div>
+        <div class="footer-brand-logo">
+          <a href="index.html" class="nav-logo" aria-label="NeonTech Home" style="display:inline-flex;">
+            <div class="logo-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <div class="logo-text">Neon<span>Tech</span></div>
+          </a>
+        </div>
+        <p class="footer-brand-desc">
+          The premium destination for competitive gamers and tech enthusiasts.
+          Curated gear, unbeatable prices, and obsessive customer support.
+        </p>
+        <div class="footer-socials">
+          <a href="#" class="social-btn" aria-label="Twitter / X">X</a>
+          <a href="#" class="social-btn" aria-label="Discord">DC</a>
+          <a href="#" class="social-btn" aria-label="YouTube">YT</a>
+          <a href="#" class="social-btn" aria-label="Instagram">IG</a>
+          <a href="#" class="social-btn" aria-label="TikTok">TK</a>
+        </div>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Shop</h3>
+        <ul class="footer-links">
+          <li><a href="#">New Arrivals <span class="new-tag">New</span></a></li>
+          <li><a href="#">Best Sellers</a></li>
+          <li><a href="#">Controllers</a></li>
+          <li><a href="#">Headsets</a></li>
+          <li><a href="#">Keyboards</a></li>
+          <li><a href="#">Monitors</a></li>
+          <li><a href="#">Deals &amp; Bundles</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Support</h3>
+        <ul class="footer-links">
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Track My Order</a></li>
+          <li><a href="#">Returns &amp; Refunds</a></li>
+          <li><a href="#">Warranty Claims</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#">Community Forum</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Company</h3>
+        <ul class="footer-links">
+          <li><a href="#">About NeonTech</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Press Kit</a></li>
+          <li><a href="#">Affiliate Program</a></li>
+          <li><a href="#">Brand Partnerships</a></li>
+        </ul>
+      </div>
+
+    </div><!-- /footer-top -->
+
+    <div class="footer-bottom">
+      <p class="footer-copy">
+        &copy; 2026 NeonTech &mdash; Created By <a href="https://salahkhaled.com" target="_blank" rel="noopener noreferrer" style="color: var(--neon); text-decoration: none; font-weight: 600; transition: opacity 0.3s;">Salah Khaled</a>
+      </p>
+      <div class="footer-bottom-links">
+        <a href="#">Privacy Policy</a>
+        <a href="#">Terms of Service</a>
+        <a href="#">Cookie Settings</a>
+      </div>
+      <div class="footer-payments" aria-label="Accepted payment methods">
+        <span class="pay-badge">VISA</span>
+        <span class="pay-badge">MC</span>
+        <span class="pay-badge">AMEX</span>
+        <span class="pay-badge">PayPal</span>
+        <span class="pay-badge">Crypto</span>
+      </div>
+    </div>
+
+  </footer>
+
+  <!-- ═══ Cart Drawer (Hidden by default, show with class .open) ═══ -->
+  <div class="cart-drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-label="Shopping Cart">
+    <div class="cart-drawer-overlay" id="cart-overlay"></div>
+    <div class="cart-drawer-content">
+      <div class="cart-drawer-header">
+        <h2 class="cart-title" style="font-size:1.3rem;">Your <span>Gear Cart</span></h2>
+        <button class="cart-close-btn" id="cart-close" aria-label="Close cart">&times;</button>
+      </div>
+      <div class="cart-drawer-items" id="cart-items-container">
+        <!-- Dynamic items will go here -->
+        <div class="cart-empty-state">
+          <span class="empty-icon">&#128722;</span>
+          <p>Your cart is empty</p>
+          <a href="#" class="btn-primary" id="cart-shop-now" style="text-align: center; text-decoration: none; display: inline-block; margin-top: 15px; padding: 10px 20px;">Shop Now</a>
+        </div>
+      </div>
+      <div class="cart-drawer-footer">
+        <div class="cart-summary-row">
+          <span>Subtotal</span>
+          <span id="cart-subtotal">$0.00</span>
+        </div>
+        <div class="cart-summary-row">
+          <span>Shipping</span>
+          <span class="text-neon" style="color: var(--neon); font-weight: bold;">FREE</span>
+        </div>
+        <div class="cart-total-row">
+          <span>Total</span>
+          <span id="cart-total">$0.00</span>
+        </div>
+        <button class="btn-primary checkout-btn" id="checkout-btn">Proceed to Checkout</button>
+      </div>
+    </div>
+  </div>
+  <div class="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title">
+    <div class="modal-card">
+      <h2 id="exit-modal-title">استنى رايح فين! 🌟</h2>
+      <p style="margin-top: 10px; opacity: 0.9;">صلاح مروق عليك ومديك كود خصم <strong></strong> بخصم 10% على كل المتجر!</p>
+      <div style="font-family: monospace; font-size: 1.5rem; font-weight: 800; color: #39FF14; background: rgba(57, 255, 20, 0.1); border: 1px dashed #39FF14; padding: 10px; border-radius: 8px; margin-top: 15px; letter-spacing: 2px;">SALAH10</div>
+      <button class="close-btn" aria-label="خلاص هشتري">خلاص هشتري</button>
+    </div>
+  </div>
+
+  <!-- Comparison Bar (Hidden by default, fixed at bottom) -->
+  <div class="comparison-bar" id="comparison-bar">
+    <div class="comp-bar-container">
+      <div class="comp-bar-info">
+        <h4 class="comp-bar-title">Product Comparison</h4>
+        <p class="comp-bar-desc">Select up to 3 items to compare side by side</p>
+      </div>
+      <div class="comp-bar-items" id="comp-bar-items">
+        <!-- Dynamically rendered slots -->
+      </div>
+      <div class="comp-bar-actions">
+        <button class="btn-ghost" id="comp-clear-btn">Clear All</button>
+        <button class="btn-primary" id="comp-compare-btn" disabled>Compare Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparison Modal -->
+  <div class="comparison-modal" id="comparison-modal" role="dialog" aria-modal="true">
+    <div class="comp-modal-card">
+      <div class="comp-modal-header">
+        <h2 class="comp-modal-title">Product <span>Comparison</span></h2>
+        <button class="comp-modal-close" id="comp-modal-close" aria-label="Close comparison">&times;</button>
+      </div>
+      <div class="comp-modal-body">
+        <div class="comp-table-wrap">
+          <table class="comp-table" id="comp-table">
+            <!-- Dynamic comparison table -->
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="auth-modal" id="auth-modal" role="dialog" aria-modal="true">
+    <div class="auth-modal-overlay" id="auth-overlay"></div>
+    <div class="auth-modal-card">
+      <div class="auth-modal-header">
+        <h2 class="auth-modal-title" id="auth-modal-title">Sign <span>In</span></h2>
+        <button class="auth-modal-close" id="auth-modal-close" aria-label="Close auth">&times;</button>
+      </div>
+      <div class="auth-modal-body">
+        
+        <form id="login-form" class="auth-form">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" required placeholder="name@example.com" />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" required placeholder="••••••••" />
+          </div>
+          <div style="text-align: right; margin-bottom: 10px;">
+            <a href="#" id="switch-to-forgot" style="font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.2s;">Forgot Password?</a>
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Login</button>
+          
+          <div class="auth-divider"><span>OR</span></div>
+          <button type="button" class="btn-google google-signin-btn">
+            <svg class="google-icon" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <p class="auth-switch" style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+            Don't have an account? <a href="#" id="switch-to-signup" style="color: var(--neon); text-decoration: none;">Sign Up</a>
+          </p>
+        </form>
+
+        <form id="signup-form" class="auth-form" style="display: none;">
+          <div class="form-group">
+            <label for="signup-name">Display Name</label>
+            <input type="text" id="signup-name" required placeholder="Gamer123" />
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email</label>
+            <input type="email" id="signup-email" required placeholder="name@example.com" />
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <input type="password" id="signup-password" required placeholder="••••••••" minlength="6" />
+          </div>
+          <div class="form-group">
+            <label for="signup-password-confirm">Confirm Password</label>
+            <input type="password" id="signup-password-confirm" required placeholder="••••••••" minlength="6" />
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Sign Up</button>
+          
+          <div class="auth-divider"><span>OR</span></div>
+          <button type="button" class="btn-google google-signin-btn">
+            <svg class="google-icon" viewBox="0 0 24 24">
+              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+            </svg>
+            Continue with Google
+          </button>
+
+          <p class="auth-switch" style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+            Already have an account? <a href="#" id="switch-to-login" style="color: var(--neon); text-decoration: none;">Login</a>
+          </p>
+        </form>
+
+        <form id="forgot-password-form" class="auth-form" style="display: none;">
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; text-align: center;">Enter your email to receive a password reset link.</p>
+          <div class="form-group">
+            <label for="forgot-email">Email</label>
+            <input type="email" id="forgot-email" required placeholder="name@example.com" />
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Send Reset Link</button>
+          <p class="auth-switch" style="text-align: center; margin-top: 15px; font-size: 0.9rem;">
+            Remembered it? <a href="#" id="forgot-to-login" style="color: var(--neon); text-decoration: none;">Login</a>
+          </p>
+        </form>
+
+        <form id="update-password-form" class="auth-form" style="display: none;">
+          <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px; text-align: center;">Create a new password for your account.</p>
+          <div class="form-group">
+            <label for="update-password">New Password</label>
+            <input type="password" id="update-password" required placeholder="••••••••" minlength="6" />
+          </div>
+          <div class="form-group">
+            <label for="update-password-confirm">Confirm Password</label>
+            <input type="password" id="update-password-confirm" required placeholder="••••••••" minlength="6" />
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">Update Password</button>
+        </form>
+        
+        <div id="auth-logged-in" style="display: none; text-align: center; padding: 20px 0;">
+          <div style="font-size: 3rem; margin-bottom: 10px;">🎮</div>
+          <h3 style="margin-bottom: 10px; font-size: 1.5rem;">Welcome back, <span id="auth-user-name" style="color: var(--neon);"></span>!</h3>
+          <p style="color: var(--text-muted); margin-bottom: 25px;">Ready to grab some new gear?</p>
+          <button id="logout-btn" class="btn-ghost" style="width: 100%;">Log Out</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>

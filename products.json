@@ -1,0 +1,492 @@
+[
+  {
+    "id": 1,
+    "title": "Razer BlackWidow V4 Pro",
+    "price": 229.99,
+    "image": "./images/keyboard.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 2,
+    "title": "Logitech G915 TKL Lightspeed",
+    "price": 229.99,
+    "image": "./images/keyboard_steelseries.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 3,
+    "title": "SteelSeries Apex Pro TKL",
+    "price": 189.99,
+    "image": "./images/keyboard_corsair.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 4,
+    "title": "Corsair K70 RGB PRO Mechanical",
+    "price": 169.99,
+    "image": "./images/keyboard_razer.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 5,
+    "title": "Keychron Q1 QMK Custom Keyboard",
+    "price": 179.99,
+    "image": "./images/keyboard.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 6,
+    "title": "HyperX Alloy Origins Core",
+    "price": 89.99,
+    "image": "./images/keyboard_steelseries.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 7,
+    "title": "Ducky One 3 SF RGB Mechanical",
+    "price": 119.99,
+    "image": "./images/keyboard_corsair.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 8,
+    "title": "ASUS ROG Strix Scope II 96",
+    "price": 149.99,
+    "image": "./images/keyboard_razer.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 9,
+    "title": "Wooting 60HE Hall Effect Keyboard",
+    "price": 174.99,
+    "image": "./images/keyboard.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 10,
+    "title": "Fnatic Streak65 Ultra-Compact RGB",
+    "price": 109.99,
+    "image": "./images/keyboard_steelseries.png",
+    "category": "Keyboards"
+  },
+  {
+    "id": 11,
+    "title": "Logitech G Pro X Superlight 2",
+    "price": 159.99,
+    "image": "./images/mouse.png",
+    "category": "Mice"
+  },
+  {
+    "id": 12,
+    "title": "Razer DeathAdder V3 Pro Wireless",
+    "price": 149.99,
+    "image": "./images/mouse_logitech.png",
+    "category": "Mice"
+  },
+  {
+    "id": 13,
+    "title": "SteelSeries Aerox 3 Wireless",
+    "price": 99.99,
+    "image": "./images/mouse_corsair.png",
+    "category": "Mice"
+  },
+  {
+    "id": 14,
+    "title": "Corsair Dark Core RGB Pro Wireless",
+    "price": 89.99,
+    "image": "./images/mouse.png",
+    "category": "Mice"
+  },
+  {
+    "id": 15,
+    "title": "Glorious Model O 2 Wireless",
+    "price": 99.99,
+    "image": "./images/mouse_logitech.png",
+    "category": "Mice"
+  },
+  {
+    "id": 16,
+    "title": "Logitech G502 X Plus Lightspeed",
+    "price": 159.99,
+    "image": "./images/mouse_corsair.png",
+    "category": "Mice"
+  },
+  {
+    "id": 17,
+    "title": "Razer Basilisk V3 Pro Wireless",
+    "price": 169.99,
+    "image": "./images/mouse.png",
+    "category": "Mice"
+  },
+  {
+    "id": 18,
+    "title": "Pulsar X2 Wireless Gaming Mouse",
+    "price": 94.99,
+    "image": "./images/mouse_logitech.png",
+    "category": "Mice"
+  },
+  {
+    "id": 19,
+    "title": "Finalmouse UltralightX Wireless",
+    "price": 189.99,
+    "image": "./images/mouse_corsair.png",
+    "category": "Mice"
+  },
+  {
+    "id": 20,
+    "title": "ASUS ROG Harpe Ace Aim Lab Edition",
+    "price": 139.99,
+    "image": "./images/mouse.png",
+    "category": "Mice"
+  },
+  {
+    "id": 21,
+    "title": "SteelSeries Arctis Nova Pro Wireless",
+    "price": 349.99,
+    "image": "./images/headset.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 22,
+    "title": "Razer BlackShark V2 Pro Wireless",
+    "price": 199.99,
+    "image": "./images/headset_razer.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 23,
+    "title": "Logitech G PRO X 2 Lightspeed Wireless",
+    "price": 249.99,
+    "image": "./images/headset_logitech.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 24,
+    "title": "Corsair Virtuoso RGB Wireless XT",
+    "price": 269.99,
+    "image": "./images/headset.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 25,
+    "title": "HyperX Cloud III Wireless Gaming",
+    "price": 149.99,
+    "image": "./images/headset_razer.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 26,
+    "title": "Astro A50 Wireless Gen 4 + Base",
+    "price": 299.99,
+    "image": "./images/headset_logitech.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 27,
+    "title": "EPOS H6PRO Closed Acoustic Headset",
+    "price": 179.99,
+    "image": "./images/headset.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 28,
+    "title": "Beyerdynamic MMX 300 Pro Headset",
+    "price": 299.00,
+    "image": "./images/headset_razer.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 29,
+    "title": "Sennheiser Game Zero Gaming Headset",
+    "price": 169.99,
+    "image": "./images/headset_logitech.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 30,
+    "title": "JBL Quantum One Wired USB Headset",
+    "price": 299.99,
+    "image": "./images/headset.png",
+    "category": "Headsets"
+  },
+  {
+    "id": 31,
+    "title": "ASUS ROG Swift PG27AQN 27\" 360Hz",
+    "price": 999.99,
+    "image": "./images/monitor.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 32,
+    "title": "MSI MEG 342C QD-OLED 34\" Ultrawide",
+    "price": 1299.99,
+    "image": "./images/monitor_msi.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 33,
+    "title": "Corsair Xeneon 27QHD240 OLED 27\"",
+    "price": 899.99,
+    "image": "./images/monitor_corsair.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 34,
+    "title": "Samsung Odyssey G9 49\" DQHD Curved",
+    "price": 1499.99,
+    "image": "./images/monitor.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 35,
+    "title": "LG UltraGear 27GR95QE 27\" OLED",
+    "price": 799.99,
+    "image": "./images/monitor_msi.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 36,
+    "title": "BenQ ZOWIE XL2546X 24.5\" 240Hz",
+    "price": 549.99,
+    "image": "./images/monitor_corsair.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 37,
+    "title": "Alienware AW3225QF 32\" QD-OLED 4K",
+    "price": 1099.99,
+    "image": "./images/monitor.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 38,
+    "title": "Acer Predator X28 28\" 4K 155Hz",
+    "price": 699.99,
+    "image": "./images/monitor_msi.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 39,
+    "title": "Gigabyte M27Q X 27\" 240Hz IPS",
+    "price": 449.99,
+    "image": "./images/monitor_corsair.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 40,
+    "title": "ViewSonic XG2431 24\" 240Hz IPS",
+    "price": 349.99,
+    "image": "./images/monitor.png",
+    "category": "Monitors"
+  },
+  {
+    "id": 41,
+    "title": "Xbox Elite Wireless Controller Series 2",
+    "price": 179.99,
+    "image": "./images/controller.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 42,
+    "title": "SteelSeries Stratus Duo Wireless",
+    "price": 59.99,
+    "image": "./images/controller_steelseries.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 43,
+    "title": "Logitech F710 Wireless Gamepad",
+    "price": 49.99,
+    "image": "./images/controller_logitech.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 44,
+    "title": "Sony DualSense Edge Wireless PS5",
+    "price": 199.99,
+    "image": "./images/controller.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 45,
+    "title": "Razer Wolverine V2 Chroma Xbox",
+    "price": 149.99,
+    "image": "./images/controller_steelseries.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 46,
+    "title": "8BitDo Ultimate Bluetooth Controller",
+    "price": 69.99,
+    "image": "./images/controller_logitech.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 47,
+    "title": "SCUF Instinct Pro Xbox Controller",
+    "price": 219.99,
+    "image": "./images/controller.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 48,
+    "title": "Nacon Revolution 5 Pro PS5/PC",
+    "price": 199.99,
+    "image": "./images/controller_steelseries.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 49,
+    "title": "Turtle Beach Stealth Ultra Xbox",
+    "price": 199.99,
+    "image": "./images/controller_logitech.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 50,
+    "title": "PowerA Spectra Infinity Enhanced",
+    "price": 49.99,
+    "image": "./images/controller.png",
+    "category": "Controllers"
+  },
+  {
+    "id": 51,
+    "title": "Secretlab TITAN Evo 2026 Series",
+    "price": 519.99,
+    "image": "./images/chair.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 52,
+    "title": "Razer Iskur V2 Ergonomic Gaming Chair",
+    "price": 499.99,
+    "image": "./images/chair_razer.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 53,
+    "title": "Corsair TC200 Leatherette Gaming Chair",
+    "price": 399.99,
+    "image": "./images/chair.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 54,
+    "title": "Herman Miller x Logitech Embody",
+    "price": 1695.00,
+    "image": "./images/chair_razer.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 55,
+    "title": "noblechairs HERO ST Gaming Chair",
+    "price": 459.99,
+    "image": "./images/chair.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 56,
+    "title": "AndaSeat Kaiser 3 XL Ergonomic",
+    "price": 449.99,
+    "image": "./images/chair_razer.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 57,
+    "title": "DXRacer Craft Pro Classic Gaming",
+    "price": 389.99,
+    "image": "./images/chair.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 58,
+    "title": "Cougar Armor Titan Pro Royal",
+    "price": 369.99,
+    "image": "./images/chair_razer.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 59,
+    "title": "AKRacing Masters Series Pro Luxury",
+    "price": 499.99,
+    "image": "./images/chair.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 60,
+    "title": "Vertagear SL5800 HygennX Edition",
+    "price": 429.99,
+    "image": "./images/chair_razer.png",
+    "category": "Gaming Chairs"
+  },
+  {
+    "id": 61,
+    "title": "ASUS ROG Strix SCAR 18 RTX 4090",
+    "price": 3499.99,
+    "image": "./images/laptop.jpg",
+    "category": "Laptops"
+  },
+  {
+    "id": 62,
+    "title": "MSI Titan 18 HX i9 RTX 4090",
+    "price": 4299.99,
+    "image": "./images/laptop_asus.png",
+    "category": "Laptops"
+  },
+  {
+    "id": 63,
+    "title": "Razer Blade 16 RTX 4080 QHD+ 240Hz",
+    "price": 3299.99,
+    "image": "./images/laptop.jpg",
+    "category": "Laptops"
+  },
+  {
+    "id": 64,
+    "title": "Alienware m18 R2 i9 RTX 4090",
+    "price": 3799.99,
+    "image": "./images/laptop_asus.png",
+    "category": "Laptops"
+  },
+  {
+    "id": 65,
+    "title": "Lenovo Legion Pro 7i 16\" RTX 4080",
+    "price": 2499.99,
+    "image": "./images/laptop.jpg",
+    "category": "Laptops"
+  },
+  {
+    "id": 66,
+    "title": "Acer Predator Helios 18 RTX 4080",
+    "price": 2299.99,
+    "image": "./images/laptop_asus.png",
+    "category": "Laptops"
+  },
+  {
+    "id": 67,
+    "title": "HP OMEN 17 i9 RTX 4070 Ti 240Hz",
+    "price": 1999.99,
+    "image": "./images/laptop.jpg",
+    "category": "Laptops"
+  },
+  {
+    "id": 68,
+    "title": "Gigabyte AORUS 17X RTX 4090 UHD+",
+    "price": 3699.99,
+    "image": "./images/laptop_asus.png",
+    "category": "Laptops"
+  },
+  {
+    "id": 69,
+    "title": "ASUS ROG Zephyrus G16 RTX 4070",
+    "price": 1799.99,
+    "image": "./images/laptop.jpg",
+    "category": "Laptops"
+  },
+  {
+    "id": 70,
+    "title": "MSI Raider GE78 HX 16\" RTX 4080",
+    "price": 2799.99,
+    "image": "./images/laptop_asus.png",
+    "category": "Laptops"
+  }
+]

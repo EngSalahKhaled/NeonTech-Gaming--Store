@@ -2492,3 +2492,70 @@ function initAuth() {
 }
 
 initAuth();
+
+/* ── Featured Banner: Shop Now & Learn More ── */
+(function () {
+    var shopNowBtn = document.getElementById("featured-shop-now");
+    var learnMoreBtn = document.getElementById("featured-learn-more");
+    var pimModal = document.getElementById("product-info-modal");
+    var pimOverlay = document.getElementById("pim-overlay");
+    var pimClose = document.getElementById("pim-close");
+    var pimCloseBtns = pimModal ? pimModal.querySelectorAll(".pim-close-btn") : [];
+    var pimAddCart = pimModal ? pimModal.querySelector(".pim-add-cart") : null;
+
+    function openModal() {
+        if (pimModal) {
+            pimModal.classList.add("open");
+            document.body.style.overflow = "hidden";
+        }
+    }
+
+    function closeModal() {
+        if (pimModal) {
+            pimModal.classList.remove("open");
+            document.body.style.overflow = "";
+        }
+    }
+
+    if (shopNowBtn) {
+        shopNowBtn.addEventListener("click", function () {
+            var grid = document.querySelector(".product-grid");
+            if (grid) {
+                grid.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        });
+    }
+
+    if (learnMoreBtn) {
+        learnMoreBtn.addEventListener("click", openModal);
+    }
+
+    if (pimClose) {
+        pimClose.addEventListener("click", closeModal);
+    }
+
+    pimCloseBtns.forEach(function (btn) {
+        btn.addEventListener("click", closeModal);
+    });
+
+    if (pimOverlay) {
+        pimOverlay.addEventListener("click", closeModal);
+    }
+
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && pimModal && pimModal.classList.contains("open")) {
+            closeModal();
+        }
+    });
+
+    if (pimAddCart) {
+        pimAddCart.addEventListener("click", function () {
+            closeModal();
+            var cartBtn = document.querySelector(".nav-btn[aria-label*='cart']") ||
+                          document.querySelector(".nav-btn[aria-label*='Cart']");
+            if (cartBtn) {
+                setTimeout(function () { cartBtn.click(); }, 200);
+            }
+        });
+    }
+}());

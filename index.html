@@ -341,8 +341,8 @@
             <p class="featured-sub">Mechanical switches &bull; RGB Chroma &bull; Tactile feedback &bull; Only 200 units left</p>
           </div>
           <div class="featured-actions">
-            <button class="btn-primary">Shop Now</button>
-            <button class="btn-ghost">Learn More</button>
+            <button class="btn-primary" id="featured-shop-now">Shop Now</button>
+            <button class="btn-ghost" id="featured-learn-more">Learn More</button>
           </div>
         </article>
 
@@ -1713,6 +1713,165 @@
       </div>
     </div>
   </div>
+
+  <!-- Product Info Modal (Learn More) -->
+  <div class="product-info-modal" id="product-info-modal" role="dialog" aria-modal="true" aria-labelledby="pim-title">
+    <div class="pim-overlay" id="pim-overlay"></div>
+    <div class="pim-card">
+      <button class="pim-close" id="pim-close" aria-label="Close">&times;</button>
+      <div class="pim-tag">Limited Drop &mdash; Only 200 Units</div>
+      <h2 class="pim-title" id="pim-title">Razer BlackWidow V4 Pro<br><span>Phantom Edition</span></h2>
+      <p class="pim-desc">The ultimate limited-edition mechanical keyboard built for elite gamers. Featuring Razer's signature tactile Orange switches, full per-key RGB Chroma lighting, and an exclusive Phantom keycap set that glows with spectral brilliance.</p>
+      <ul class="pim-features">
+        <li><span class="pim-check">&#10003;</span> Razer Orange Mechanical Switches — Tactile &amp; Silent</li>
+        <li><span class="pim-check">&#10003;</span> Per-Key RGB Chroma with 16.8M Colors</li>
+        <li><span class="pim-check">&#10003;</span> Phantom Translucent Keycap Set — Exclusive Edition</li>
+        <li><span class="pim-check">&#10003;</span> Magnetic Wrist Rest Included</li>
+        <li><span class="pim-check">&#10003;</span> Dedicated Media Controls &amp; Volume Dial</li>
+        <li><span class="pim-check">&#10003;</span> 8 Onboard Memory Profiles</li>
+        <li><span class="pim-check">&#10003;</span> Razer Synapse 4 Software Support</li>
+      </ul>
+      <div class="pim-pricing">
+        <span class="pim-price-old">$249.99</span>
+        <span class="pim-price-now">$189.99</span>
+        <span class="pim-badge">Limited Drop</span>
+      </div>
+      <div class="pim-actions">
+        <button class="btn-primary pim-add-cart">Add to Cart</button>
+        <button class="btn-ghost pim-close-btn">Maybe Later</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .product-info-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+    }
+    .product-info-modal.open {
+      display: flex;
+    }
+    .pim-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(4px);
+    }
+    .pim-card {
+      position: relative;
+      z-index: 1;
+      background: var(--surface, #0d0d0d);
+      border: 1px solid var(--neon, #39FF14);
+      border-radius: 16px;
+      padding: 40px;
+      max-width: 560px;
+      width: calc(100% - 32px);
+      box-shadow: 0 0 40px rgba(57,255,20,0.15);
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .pim-close {
+      position: absolute;
+      top: 14px;
+      right: 18px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted, #aaa);
+      font-size: 1.6rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+    .pim-close:hover { color: var(--neon, #39FF14); }
+    .pim-tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--neon, #39FF14);
+      border: 1px solid var(--neon, #39FF14);
+      padding: 3px 10px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    .pim-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--text-primary, #fff);
+      line-height: 1.25;
+      margin-bottom: 14px;
+    }
+    .pim-title span { color: var(--neon, #39FF14); }
+    .pim-desc {
+      color: var(--text-muted, #aaa);
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .pim-features {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .pim-features li {
+      font-size: 0.88rem;
+      color: var(--text-secondary, #ccc);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .pim-check {
+      color: var(--neon, #39FF14);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .pim-pricing {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .pim-price-old {
+      font-size: 1rem;
+      color: var(--text-muted, #aaa);
+      text-decoration: line-through;
+    }
+    .pim-price-now {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: var(--neon, #39FF14);
+    }
+    .pim-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: rgba(57,255,20,0.12);
+      color: var(--neon, #39FF14);
+      border: 1px solid rgba(57,255,20,0.4);
+      padding: 3px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .pim-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .pim-actions .btn-primary,
+    .pim-actions .btn-ghost {
+      flex: 1;
+      min-width: 120px;
+    }
+  </style>
 
   <script src="main.js"></script>
 </body>

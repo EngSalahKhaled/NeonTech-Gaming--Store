@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cookie Settings — NeonTech</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="progress-bar"></div> 
+
+  <!-- ═══ Navigation ═══════════════════════════════════════════════ -->
+  <header class="nav" role="banner">
+    <a href="index.html" class="nav-logo" aria-label="NeonTech Home">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <div class="logo-text">Neon<span>Tech</span></div>
+    </a>
+
+    <form class="nav-search" role="search" action="index.html" method="GET">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="search" name="q" placeholder="Search products, brands…" aria-label="Search products" />
+    </form>
+
+    <nav class="nav-actions" aria-label="Quick actions">
+      <a href="#" class="nav-btn" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </a>
+      <a href="#" class="nav-btn" id="user-account-btn" aria-label="User account">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </a>
+      <a href="#" class="nav-btn" aria-label="Shopping cart, 3 items">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span class="cart-badge" aria-hidden="true">0</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ═══ Main Content ═════════════════════════════════════════════ -->
+  <main class="info-page-container">
+    <h1 class="info-header-title">Cookie <span>Settings</span></h1>
+    <span class="info-last-updated">LAST MODIFIED: JUNE 01, 2026</span>
+    
+    <div class="info-content">
+      <h2>Local Storage & Cookie Guidelines</h2>
+      <p>
+        To ensure NeonTech loads instantly, remains fully functional offline (via Service Workers), and preserves your gaming configuration, we utilize local browser memory capabilities instead of standard tracking cookies.
+      </p>
+
+      <h2>1. What We Store Locally</h2>
+      <p>
+        Instead of uninvited tracking code that follows you across the web, we store clean parameters directly inside your browser cache (`localStorage`):
+      </p>
+      <ul>
+        <li><strong>`neontech-cart`:</strong> Keeps track of items added to your shopping cart.</li>
+        <li><strong>`neontech-rgb-theme`:</strong> Remembers your active color preset customization (Green, Pink, Cyan, Gold).</li>
+        <li><strong>`neontech_theme`:</strong> Remembers your base interface setting (Dark or Light UI mode).</li>
+        <li><strong>`neontech_wishlist` / `neontech_comparison`:</strong> Keeps your liked products and comparison grids active.</li>
+      </ul>
+
+      <h2>2. Managing Your Settings</h2>
+      <p>
+        Because all this data is kept inside your browser, **you have absolute command over it**. Cleansing your browser history, deleting local site data, or running standard privacy extensions will immediately reset your shopping cart, preferences, and interface setups without leaving any residue.
+      </p>
+
+      <h2>3. Consenting to Settings</h2>
+      <p>
+        By continuing to navigate the NeonTech Gaming Store and customize your RGB profiles, you consent to our clean browser-level storage configuration. Enjoy a high-speed, secure, and privacy-respecting competitive gaming workspace!
+      </p>
+    </div>
+  </main>
+
+  <!-- ═══ Rich Footer ════════════════════════════════════════════════ -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-logo">
+          <a href="index.html" class="nav-logo" aria-label="NeonTech Home" style="display:inline-flex;">
+            <div class="logo-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <div class="logo-text">Neon<span>Tech</span></div>
+          </a>
+        </div>
+        <p class="footer-brand-desc">
+          The premium destination for competitive gamers and tech enthusiasts.
+          Curated gear, unbeatable prices, and obsessive customer support.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Shop</h3>
+        <ul class="footer-links">
+          <li><a href="index.html">New Arrivals</a></li>
+          <li><a href="index.html">Best Sellers</a></li>
+          <li><a href="index.html">Controllers</a></li>
+          <li><a href="index.html">Headsets</a></li>
+          <li><a href="index.html">Keyboards</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Support</h3>
+        <ul class="footer-links">
+          <li><a href="index.html">Help Center</a></li>
+          <li><a href="index.html">Warranty Claims</a></li>
+          <li><a href="index.html">Contact Us</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Company</h3>
+        <ul class="footer-links">
+          <li><a href="about.html">About NeonTech</a></li>
+          <li><a href="privacy.html">Privacy Policy</a></li>
+          <li><a href="terms.html">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-copy">
+        &copy; 2026 NeonTech &mdash; Created By <a href="https://salahkhaled.com" target="_blank" rel="noopener noreferrer" style="color: var(--neon); text-decoration: none; font-weight: 600;">Salah Khaled</a>
+      </p>
+      <div class="footer-bottom-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+        <a href="cookies.html">Cookie Settings</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

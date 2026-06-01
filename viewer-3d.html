@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Holographic Gear Room — NeonTech</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="progress-bar"></div> 
+
+  <!-- ═══ Navigation ═══════════════════════════════════════════════ -->
+  <header class="nav" role="banner">
+    <a href="index.html" class="nav-logo" aria-label="NeonTech Home">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <div class="logo-text">Neon<span>Tech</span></div>
+    </a>
+
+    <form class="nav-search" role="search" action="index.html" method="GET">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="search" name="q" placeholder="Search products, brands…" aria-label="Search products" />
+    </form>
+
+    <nav class="nav-actions" aria-label="Quick actions">
+      <a href="#" class="nav-btn" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </a>
+      <a href="#" class="nav-btn" id="user-account-btn" aria-label="User account">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </a>
+      <a href="#" class="nav-btn" aria-label="Shopping cart, 3 items">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span class="cart-badge" aria-hidden="true">0</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ═══ 3D Showroom Podium Stage ═════════════════════════════════ -->
+  <main class="showroom-container">
+    
+    <!-- Sidebar Panel -->
+    <aside class="showroom-sidebar">
+      <div class="showroom-title">
+        <span>3D GEAR</span> ROOM
+      </div>
+      <p class="showroom-desc">
+        Holographic 360° showroom. Pick gaming gear below, or drop your own image to project it in 3D. Click & drag on the stage to rotate.
+      </p>
+
+      <!-- Selector List -->
+      <div class="showroom-control-group">
+        <span class="showroom-control-label">SELECT SPECIMEN</span>
+        <div class="gear-selector-list">
+          <button class="gear-select-btn active" data-gear="keyboard">
+            ⌨️ Mech Keyboard
+          </button>
+          <button class="gear-select-btn" data-gear="mouse">
+            🖱️ Pro Gaming Mouse
+          </button>
+          <button class="gear-select-btn" data-gear="headset">
+            🎧 Spatial Headset
+          </button>
+          <button class="gear-select-btn" data-gear="controller">
+            🎮 Elite Controller
+          </button>
+          <button class="gear-select-btn" data-gear="vr">
+            🥽 Next-Gen VR Headset
+          </button>
+        </div>
+      </div>
+
+      <!-- Upload Custom Gear -->
+      <div class="showroom-control-group">
+        <span class="showroom-control-label">PROJECT YOUR OWN GEAR</span>
+        <div class="upload-gear-box" id="upload-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>
+          </svg>
+          <p>Drop image here or click to upload</p>
+          <input type="file" id="gear-file-input" class="hidden-file-input" accept="image/*" />
+        </div>
+      </div>
+
+      <!-- Customize RGB Glow -->
+      <div class="showroom-control-group">
+        <span class="showroom-control-label">HOLOGRAM LASER GLOW</span>
+        <div class="showroom-color-picker">
+          <div class="showroom-color-dot active" style="background: #00ff87; color: #00ff87;" data-color="#00ff87"></div>
+          <div class="showroom-color-dot" style="background: #ff007f; color: #ff007f;" data-color="#ff007f"></div>
+          <div class="showroom-color-dot" style="background: #00f0ff; color: #00f0ff;" data-color="#00f0ff"></div>
+          <div class="showroom-color-dot" style="background: #ffde00; color: #ffde00;" data-color="#ffde00"></div>
+        </div>
+      </div>
+
+      <!-- Gear Zoom / Scale -->
+      <div class="showroom-control-group" style="margin-top: 10px;">
+        <span class="showroom-control-label">GEAR ZOOM / SCALE</span>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <input type="range" id="zoom-slider" min="0.8" max="2.2" step="0.1" value="1.4" style="flex: 1; accent-color: var(--neon); background: #080b0f; border: 1px solid rgba(255,255,255,0.1); height: 6px; border-radius: 3px; outline: none; cursor: pointer;" aria-label="Gear zoom slider" />
+          <span id="zoom-val" style="font-family: monospace; font-size: 0.82rem; color: var(--neon); min-width: 35px;">1.4x</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 3D Stage Wrapper -->
+    <section class="showroom-stage-wrapper" id="showroom-stage" aria-label="3D Holographic Stage Room">
+      
+      <!-- Room Grid Floor -->
+      <div class="grid-floor"></div>
+
+      <!-- Hologram Rays -->
+      <div class="holo-rays"></div>
+
+      <!-- Scanning Line -->
+      <div class="holo-scan-line"></div>
+
+      <!-- Spinning Rings -->
+      <div class="podium-ring-outer"></div>
+      <div class="podium-ring-inner"></div>
+
+      <!-- Podium Base -->
+      <div class="podium-base"></div>
+
+      <!-- Rotating 3D Object Container -->
+      <div class="holo-stage-3d" id="stage-3d" style="--rx: 10deg; --ry: 45deg;">
+        <div class="holo-stage-object" id="holo-object">
+          <img src="images/keyboard.png" alt="Pro Keyboard Specimen" id="stage-product-img" />
+          
+          <!-- Hotspots Container -->
+          <div id="hotspots-container">
+            <!-- Dynamically loaded hotspots -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══ Rich Footer ════════════════════════════════════════════════ -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-logo">
+          <a href="index.html" class="nav-logo" aria-label="NeonTech Home" style="display:inline-flex;">
+            <div class="logo-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <div class="logo-text">Neon<span>Tech</span></div>
+          </a>
+        </div>
+        <p class="footer-brand-desc">
+          The premium destination for competitive gamers and tech enthusiasts.
+          Curated gear, unbeatable prices, and obsessive customer support.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Shop</h3>
+        <ul class="footer-links">
+          <li><a href="index.html">New Arrivals</a></li>
+          <li><a href="index.html">Best Sellers</a></li>
+          <li><a href="index.html">Controllers</a></li>
+          <li><a href="index.html">Headsets</a></li>
+          <li><a href="index.html">Keyboards</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Support</h3>
+        <ul class="footer-links">
+          <li><a href="index.html">Help Center</a></li>
+          <li><a href="index.html">Warranty Claims</a></li>
+          <li><a href="index.html">Contact Us</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Company</h3>
+        <ul class="footer-links">
+          <li><a href="about.html">About NeonTech</a></li>
+          <li><a href="privacy.html">Privacy Policy</a></li>
+          <li><a href="terms.html">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-copy">
+        &copy; 2026 NeonTech &mdash; Created By <a href="https://salahkhaled.com" target="_blank" rel="noopener noreferrer" style="color: var(--neon); text-decoration: none; font-weight: 600;">Salah Khaled</a>
+      </p>
+      <div class="footer-bottom-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+        <a href="cookies.html">Cookie Settings</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+
+  <!-- ── 3D Showroom Core Interactive JS Logic ── -->
+  <script>
+    const defaultGear = {
+      keyboard: {
+        title: "Pro Keyboard",
+        image: "images/keyboard.png",
+        desc: "Tactile mechanical keyboard engineered for competitive play. Cybernetic typing speed and dynamic per-key illumination presets.",
+        hotspots: [
+          { x: 25, y: 40, title: "Key Switches", desc: "Equipped with hot-swappable tactile Gateron Green switches." },
+          { x: 65, y: 35, title: "RGB Accents", desc: "Dynamic underglow and per-key backlighting effects." },
+          { x: 85, y: 65, title: "Connectivity", desc: "Detachable gold-plated paracord USB-C cable." }
+        ]
+      },
+      mouse: {
+        title: "Elite Mouse",
+        image: "images/mouse.png",
+        desc: "Superlight esports mouse designed for flawless swipes. Ultra-precise sensor and zero latency clicking mechanisms.",
+        hotspots: [
+          { x: 50, y: 25, title: "Optical Switches", desc: "Zero-bounce optical switches rated for 90M clicks." },
+          { x: 50, y: 60, title: "Elite Sensor", desc: "PixArt PAW3395 sensor driving up to 26,000 DPI." },
+          { x: 35, y: 80, title: "PTFE Skates", desc: "Virgin-grade PTFE skates for friction-free gliding." }
+        ]
+      },
+      headset: {
+        title: "Spatial Headset",
+        image: "images/headset.png",
+        desc: "Holographic spatial audio headset with a retractable broadcast-grade microphone and comfortable memory foam cushions.",
+        hotspots: [
+          { x: 20, y: 50, title: "40mm Drivers", desc: "Custom neodymium drivers delivering ultra-wide spatial audio." },
+          { x: 50, y: 15, title: "Suspension Band", desc: "Lightweight steel headband distributing weight perfectly." },
+          { x: 75, y: 72, title: "Retractable Mic", desc: "ClearCast bidirection microphone with noise cancellation." }
+        ]
+      },
+      controller: {
+        title: "Pro Controller",
+        image: "images/controller.png",
+        desc: "Elite wireless controller featuring rear programmable paddle keys, trigger locks, and swappable thumbsticks.",
+        hotspots: [
+          { x: 30, y: 45, title: "Hall-Effect Sticks", desc: "Anti-drift Hall-Effect analog sticks for lifetime precision." },
+          { x: 75, y: 55, title: "Tactile Buttons", desc: "Microswitch action buttons with instant click response." },
+          { x: 50, y: 80, title: "Trigger Locks", desc: "Adjustable hair-trigger locks for rapid shooting speed." }
+        ]
+      },
+      vr: {
+        title: "VR Headset",
+        image: "images/vr.png",
+        desc: "Next-gen virtual reality headset featuring 4K spatial lenses, custom tracking cameras, and deep gaming immersion.",
+        hotspots: [
+          { x: 50, y: 35, title: "4K Lenses", desc: "Dual micro-OLED displays delivering 2K per eye clarity." },
+          { x: 25, y: 65, title: "Tracking Cameras", desc: "4 integrated high-speed tracking cameras for mapping." },
+          { x: 75, y: 55, title: "Comfort Foam", desc: "Air-weave breathable memory foam blocking external light." }
+        ]
+      }
+    };
+
+    // ── 3D Interactive Rotation ──
+    const stage = document.getElementById("showroom-stage");
+    const stage3d = document.getElementById("stage-3d");
+    
+    let isDragging = false;
+    let previousX = 0;
+    let previousY = 0;
+    
+    let rx = 10; // rotate X initial
+    let ry = 45; // rotate Y initial
+
+    stage.addEventListener("mousedown", (e) => {
+      isDragging = true;
+      previousX = e.clientX;
+      previousY = e.clientY;
+    });
+
+    stage.addEventListener("touchstart", (e) => {
+      isDragging = true;
+      previousX = e.touches[0].clientX;
+      previousY = e.touches[0].clientY;
+    });
+
+    window.addEventListener("mouseup", () => isDragging = false);
+    window.addEventListener("touchend", () => isDragging = false);
+
+    window.addEventListener("mousemove", (e) => {
+      if (!isDragging) return;
+      
+      const deltaX = e.clientX - previousX;
+      const deltaY = e.clientY - previousY;
+      
+      ry += deltaX * 0.5;
+      rx -= deltaY * 0.5;
+      
+      // Clamp rotateX so object doesn't turn upside down
+      rx = Math.max(-45, Math.min(45, rx));
+      
+      stage3d.style.setProperty("--rx", `${rx}deg`);
+      stage3d.style.setProperty("--ry", `${ry}deg`);
+      
+      previousX = e.clientX;
+      previousY = e.clientY;
+    });
+
+    window.addEventListener("touchmove", (e) => {
+      if (!isDragging) return;
+      
+      const deltaX = e.touches[0].clientX - previousX;
+      const deltaY = e.touches[0].clientY - previousY;
+      
+      ry += deltaX * 0.5;
+      rx -= deltaY * 0.5;
+      
+      rx = Math.max(-45, Math.min(45, rx));
+      
+      stage3d.style.setProperty("--rx", `${rx}deg`);
+      stage3d.style.setProperty("--ry", `${ry}deg`);
+      
+      previousX = e.touches[0].clientX;
+      previousY = e.touches[0].clientY;
+    });
+
+    // ── Gear Zoom/Scale slider binding ──
+    const zoomSlider = document.getElementById("zoom-slider");
+    const zoomVal = document.getElementById("zoom-val");
+    
+    zoomSlider.addEventListener("input", (e) => {
+      const val = e.target.value;
+      productImg.style.setProperty("--scale", val);
+      zoomVal.textContent = `${val}x`;
+    });
+
+    // ── Gear Switcher ──
+    const selectBtns = document.querySelectorAll(".gear-select-btn");
+    const productImg = document.getElementById("stage-product-img");
+    const hotspotsContainer = document.getElementById("hotspots-container");
+
+    selectBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        selectBtns.forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        
+        const gearKey = btn.getAttribute("data-gear");
+        loadGearSpecimen(gearKey);
+      });
+    });
+
+    function loadGearSpecimen(key) {
+      const gear = defaultGear[key];
+      if (!gear) return;
+      
+      productImg.src = gear.image;
+      productImg.alt = `${gear.title} Specimen`;
+      
+      // Load hotspots
+      hotspotsContainer.innerHTML = "";
+      gear.hotspots.forEach(hs => {
+        const hotspot = document.createElement("div");
+        hotspot.className = "tech-hotspot";
+        hotspot.style.left = `${hs.x}%`;
+        hotspot.style.top = `${hs.y}%`;
+        hotspot.innerHTML = `
+          <div class="hotspot-hud">
+            <div class="hud-title">${hs.title}</div>
+            <p>${hs.desc}</p>
+          </div>
+        `;
+        hotspotsContainer.appendChild(hotspot);
+      });
+      
+      // Auto-reset rotation smooth
+      rx = 10;
+      ry = 45;
+      stage3d.style.setProperty("--rx", "10deg");
+      stage3d.style.setProperty("--ry", "45deg");
+    }
+
+    // Load default Keyboard on load
+    loadGearSpecimen("keyboard");
+
+    // ── Upload Custom Gear ──
+    const uploadBox = document.getElementById("upload-box");
+    const fileInput = document.getElementById("gear-file-input");
+
+    uploadBox.addEventListener("click", () => fileInput.click());
+
+    // Drag & Drop
+    uploadBox.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      uploadBox.style.borderColor = "var(--neon)";
+      uploadBox.style.background = "rgba(0, 255, 135, 0.05)";
+    });
+
+    uploadBox.addEventListener("dragleave", () => {
+      uploadBox.style.borderColor = "rgba(255,255,255,0.12)";
+      uploadBox.style.background = "rgba(255,255,255,0.01)";
+    });
+
+    uploadBox.addEventListener("drop", (e) => {
+      e.preventDefault();
+      uploadBox.style.borderColor = "rgba(255,255,255,0.12)";
+      uploadBox.style.background = "rgba(255,255,255,0.01)";
+      
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith("image/")) {
+        processUploadedImage(file);
+      }
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        processUploadedImage(file);
+      }
+    });
+
+    function processUploadedImage(file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        productImg.src = event.target.result;
+        productImg.alt = "Custom Gamer Gear Hologram";
+        
+        // Deactivate sidebar selections
+        selectBtns.forEach(b => b.classList.remove("active"));
+        
+        // Generate generic hotspots
+        hotspotsContainer.innerHTML = "";
+        const customHotspots = [
+          { x: 30, y: 35, title: "Hardware Core", desc: "Custom structural chassis optimized for weight reduction." },
+          { x: 70, y: 60, title: "Peripheral Core", desc: "Elite tracking arrays and seamless connection paths." }
+        ];
+        
+        customHotspots.forEach(hs => {
+          const hotspot = document.createElement("div");
+          hotspot.className = "tech-hotspot";
+          hotspot.style.left = `${hs.x}%`;
+          hotspot.style.top = `${hs.y}%`;
+          hotspot.innerHTML = `
+            <div class="hotspot-hud">
+              <div class="hud-title">${hs.title}</div>
+              <p>${hs.desc}</p>
+            </div>
+          `;
+          hotspotsContainer.appendChild(hotspot);
+        });
+
+        // Feedback toast
+        showNeonToast("⚡ Custom Gear Projected", "Holographic custom peripheral loaded on podium!");
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // ── Hologram Laser Glow Color Picker ──
+    const colorDots = document.querySelectorAll(".showroom-color-dot");
+    const gridFloor = document.querySelector(".grid-floor");
+    const podiumBase = document.querySelector(".podium-base");
+    const rays = document.querySelector(".holo-rays");
+
+    colorDots.forEach(dot => {
+      dot.addEventListener("click", () => {
+        colorDots.forEach(d => d.classList.remove("active"));
+        dot.classList.add("active");
+        
+        const color = dot.getAttribute("data-color");
+        applyHologramColor(color);
+      });
+    });
+
+    function applyHologramColor(color) {
+      // Set root color variable specifically on stage elements
+      stage.style.setProperty("--neon", color);
+      
+      // Parse color to rgb for dim and glows
+      let glow = `0 0 30px ${color}, inset 0 0 20px ${color}66`;
+      podiumBase.style.boxShadow = glow;
+      podiumBase.style.borderColor = color;
+      
+      const ringOuter = document.querySelector(".podium-ring-outer");
+      const ringInner = document.querySelector(".podium-ring-inner");
+      ringOuter.style.borderColor = color;
+      ringInner.style.borderColor = color;
+      
+      // Update floor grid styling
+      gridFloor.style.backgroundImage = `linear-gradient(${color}22 1px, transparent 1px), linear-gradient(90deg, ${color}22 1px, transparent 1px)`;
+      
+      // Update hologram rays
+      rays.style.background = `linear-gradient(to top, ${color}33 0%, transparent 100%)`;
+      
+      showNeonToast("🎨 Hologram Synced", "Hologram laser wavelength color calibrated.");
+    }
+  </script>
+</body>
+</html>

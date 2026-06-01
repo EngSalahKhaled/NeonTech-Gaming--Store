@@ -532,6 +532,10 @@ function initLiveSearch() {
     let currentCategory = "all products";
     let currentSearchQuery = "";
     
+    // Pagination & Infinite Scroll state
+    let paginationLimit = 8;
+    let isPaginationLoading = false;
+    
     // حفظ البيانات الأصلية والترتيب لكروت المنتجات لتمكين الفلترة والفرز السريع
     let productCardsData = [];
     if (cardsList.length > 0) {
@@ -561,7 +565,11 @@ function initLiveSearch() {
     }
 
     // دالة لتنفيذ الفلترة والفرز المشترك (البحث، الأقسام، الماركات، التقييم، نطاق السعر، والترتيب)
-    function applyCombinedFilters() {
+    function applyCombinedFilters(keepLimit = false) {
+        if (!keepLimit) {
+            paginationLimit = 8;
+        }
+        
         let selectedBrands = Array.from(brandCheckboxes).filter(cb => cb.checked).map(cb => cb.value.toLowerCase());
         let selectedRatings = Array.from(ratingCheckboxes).filter(cb => cb.checked).map(cb => parseFloat(cb.value));
         let maxPrice = priceSlider ? parseInt(priceSlider.value) : 750;
@@ -611,25 +619,34 @@ function initLiveSearch() {
         productCardsData.forEach(cardData => {
             cardData.element.style.display = "none";
             cardData.element.classList.remove("active");
+            cardData.element.removeAttribute("data-paginated-hidden");
         });
 
         let productGrid = document.querySelector(".product-grid");
         if (productGrid) {
-            filteredCards.forEach(function(cardData) {
-                cardData.element.style.display = "";
-                setTimeout(() => {
-                    cardData.element.classList.add("active");
-                }, 10);
+            filteredCards.forEach(function(cardData, index) {
+                if (index < paginationLimit) {
+                    cardData.element.style.display = "";
+                    setTimeout(() => {
+                        cardData.element.classList.add("active");
+                    }, 10);
+                } else {
+                    cardData.element.style.display = "none";
+                    cardData.element.setAttribute("data-paginated-hidden", "true");
+                }
                 productGrid.appendChild(cardData.element);
             });
         }
 
-        let visibleCount = filteredCards.length;
+        let totalMatched = filteredCards.length;
+        let currentlyShowing = Math.min(paginationLimit, totalMatched);
 
         // 8. تحديث نص نتائج الفلترة في الكتالوج (مثال: 6 products found — Showing 1–6)
         if (catalogMeta) {
-            catalogMeta.innerHTML = `<strong>${visibleCount}</strong> products found &mdash; Showing 1&ndash;${visibleCount}`;
+            catalogMeta.innerHTML = `<strong>${totalMatched}</strong> products found &mdash; Showing 1&ndash;${currentlyShowing}`;
         }
+
+        let visibleCount = totalMatched;
 
         // 9. تحديث رقاقات الفلترة النشطة (Active Filter Chips)
         if (activeFiltersContainer) {
@@ -831,6 +848,57 @@ function initLiveSearch() {
     if (urlQuery && cardsList.length > 0) {
         searchInput.value = urlQuery;
         currentSearchQuery = urlQuery.toLowerCase().trim();
+    }
+
+    // 10. Infinite Scroll / Lazy Load Pagination
+    window.addEventListener("scroll", function() {
+        if (isPaginationLoading) return;
+        
+        let hiddenCards = document.querySelectorAll("[data-paginated-hidden='true']");
+        if (hiddenCards.length === 0) return;
+        
+        let scrollHeight = document.documentElement.scrollHeight;
+        let clientHeight = window.innerHeight;
+        let scrollTop = window.scrollY || document.documentElement.scrollTop;
+        
+        if (scrollHeight - clientHeight - scrollTop < 150) {
+            loadNextPage();
+        }
+    });
+
+    function loadNextPage() {
+        isPaginationLoading = true;
+        
+        let productGrid = document.querySelector(".product-grid");
+        if (!productGrid) return;
+        
+        let skeletonContainer = document.createElement("div");
+        skeletonContainer.className = "skeleton-container no-print";
+        skeletonContainer.style.display = "contents"; 
+        
+        for (let i = 0; i < 4; i++) {
+            let skeletonCard = document.createElement("div");
+            skeletonCard.className = "skeleton-card";
+            skeletonCard.innerHTML = `
+                <div class="skeleton-image"></div>
+                <div class="skeleton-text skeleton-title"></div>
+                <div class="skeleton-text skeleton-category"></div>
+                <div class="skeleton-text skeleton-price"></div>
+                <div class="skeleton-button"></div>
+            `;
+            skeletonContainer.appendChild(skeletonCard);
+        }
+        
+        productGrid.appendChild(skeletonContainer);
+        
+        setTimeout(() => {
+            skeletonContainer.remove();
+            paginationLimit += 8;
+            applyCombinedFilters(true);
+            checkCards();
+            isPaginationLoading = false;
+            showNeonToast("⚡ More Gear Loaded", "Next set of elite items are ready.");
+        }, 1000);
     }
 
     // التشغيل المبدئي للفلترة المشتركة لمراعاة العناصر المحددة مسبقاً (Default brand checks, etc.)
@@ -1377,11 +1445,14 @@ function initNotificationsCenter() {
     dropdown.innerHTML = `
         <div class="notif-header">
             <h3>Notifications</h3>
-            <button class="notif-clear-all">Clear All</button>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="notif-clear-all">Clear All</button>
+                <button class="notif-close-btn" aria-label="Close notifications">&times;</button>
+            </div>
         </div>
         <div class="notif-list" id="notif-items-list"></div>
     `;
-    wrapper.appendChild(dropdown);
+    document.body.appendChild(dropdown);
 
     let listContainer = dropdown.querySelector("#notif-items-list");
     let clearAllBtn = dropdown.querySelector(".notif-clear-all");
@@ -1481,6 +1552,16 @@ function initNotificationsCenter() {
         updateBadge();
     }
 
+    // Handle close button click
+    let closeBtn = dropdown.querySelector(".notif-close-btn");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", function(e) {
+            e.stopPropagation();
+            dropdown.classList.remove("open");
+            document.body.classList.remove("notif-open");
+        });
+    }
+
     // Toggle dropdown
     bellBtn.addEventListener("click", function(e) {
         e.preventDefault();
@@ -1489,11 +1570,14 @@ function initNotificationsCenter() {
         let isOpen = dropdown.classList.toggle("open");
         
         if (isOpen) {
+            document.body.classList.add("notif-open");
             // Mark all as read when opening
             notifications.forEach(n => {
                 n.unread = false;
             });
             renderNotifications();
+        } else {
+            document.body.classList.remove("notif-open");
         }
     });
 
@@ -1506,22 +1590,78 @@ function initNotificationsCenter() {
 
     // Close on clicking outside
     document.addEventListener("click", function(e) {
-        if (!wrapper.contains(e.target)) {
+        if (!wrapper.contains(e.target) && !dropdown.contains(e.target)) {
             dropdown.classList.remove("open");
+            document.body.classList.remove("notif-open");
         }
     });
 
     // Render initial list
     renderNotifications();
 
-    // Simulate incoming notification after 12 seconds
-    setTimeout(function() {
-        let newNotif = {
-            id: Date.now(),
+    // Dynamic Esports Notifications Pool for Periodic Broadcasts
+    const notificationPool = [
+        {
             type: "deal",
-            icon: "🚨",
+            icon: "⚡",
             title: "Flash Sale Alert!",
             desc: "SteelSeries Arctis Nova Pro is now 30% off for the next 2 hours. Don't miss out!",
+            toastTitle: "🔔 Flash Sale Alert!",
+            toastDesc: "SteelSeries Arctis Nova Pro is 30% off! Check notifications."
+        },
+        {
+            type: "deal",
+            icon: "⌨️",
+            title: "Limited Drop Live!",
+            desc: "Razer BlackWidow V4 Pro Phantom Edition is now in stock. Only 200 units worldwide!",
+            toastTitle: "⌨️ Limited Drop Live!",
+            toastDesc: "Razer Phantom Edition mechanical keyboard is in stock! Check details."
+        },
+        {
+            type: "deal",
+            icon: "🎁",
+            title: "Monthly Gear Giveaway!",
+            desc: "Enter the NeonTech monthly giveaway today to win a free next-gen VR headset. Winners announced Friday!",
+            toastTitle: "🎁 Gear Giveaway!",
+            toastDesc: "Win a free next-gen VR headset! Enter before Friday."
+        },
+        {
+            type: "deal",
+            icon: "🔥",
+            title: "Exclusive Gamer Discount!",
+            desc: "Use discount coupon code DOCK15 to get 15% off any premium mousepad or elite gaming accessory.",
+            toastTitle: "🔥 Exclusive Gamer Discount!",
+            toastDesc: "Get 15% off premium mousepads and accessories now!"
+        },
+        {
+            type: "deal",
+            icon: "🎮",
+            title: "Elite Controller Restocked!",
+            desc: "The premium drift-free Elite Controller with hall-effect sticks is back in stock. Order now before it's gone!",
+            toastTitle: "🎮 Elite Controller Restocked!",
+            toastDesc: "Esports elite drift-free controllers are back in stock! Order now."
+        },
+        {
+            type: "deal",
+            icon: "💡",
+            title: "Pro Setup Guide Published!",
+            desc: "Learn how to calibrate your mouse DPI and monitor Hz for peak competitive gameplay. Read our setup manual inside!",
+            toastTitle: "💡 Pro Setup Guide!",
+            toastDesc: "Calibrate your DPI and Hz for esports peak performance. Read now!"
+        }
+    ];
+
+    function triggerIncomingNotification(forcedPoolIndex = null) {
+        // Pick a random notification from the pool or use specified index
+        let poolIndex = forcedPoolIndex !== null ? forcedPoolIndex : Math.floor(Math.random() * notificationPool.length);
+        let selectedItem = notificationPool[poolIndex];
+
+        let newNotif = {
+            id: Date.now(),
+            type: selectedItem.type,
+            icon: selectedItem.icon,
+            title: selectedItem.title,
+            desc: selectedItem.desc,
             time: "Just now",
             unread: true
         };
@@ -1529,7 +1669,7 @@ function initNotificationsCenter() {
         notifications.unshift(newNotif);
         renderNotifications();
         
-        if (!dropdown.classList.contains("open")) {
+        if (!document.body.classList.contains("notif-open") && !dropdown.classList.contains("open")) {
             updateBadge();
         } else {
             newNotif.unread = false;
@@ -1537,12 +1677,24 @@ function initNotificationsCenter() {
         }
         
         playNotificationSound();
-        showNeonToast("🔔 Flash Sale Alert!", "SteelSeries headset is 30% off! Check notifications.", function() {
+        showNeonToast(selectedItem.toastTitle, selectedItem.toastDesc, function() {
             dropdown.classList.add("open");
+            document.body.classList.add("notif-open");
             notifications.forEach(n => n.unread = false);
             renderNotifications();
+            updateBadge();
         });
-    }, 12000);
+    }
+
+    // Trigger first demo notification after 15 seconds for instant user wow factor
+    setTimeout(function() {
+        triggerIncomingNotification(0); // Trigger the SteelSeries Flash Sale Alert first
+    }, 15000);
+
+    // Schedule subsequent notifications to trigger every 10 minutes (600,000 milliseconds)
+    setInterval(function() {
+        triggerIncomingNotification();
+    }, 600000);
 }
 
 // Sound chime helper using Web Audio API
@@ -1582,60 +1734,77 @@ function playNotificationSound() {
     }
 }
 
+// Custom Alert System
+function showCustomAlert(title, message, type = 'info') {
+    let icon = "🔔";
+    if (type === 'success') icon = "🎉";
+    else if (type === 'error') icon = "⚠️";
+    else if (type === 'warning') icon = "🚨";
+    else if (type === 'info') icon = "ℹ️";
+
+    const existingOverlay = document.querySelector(".custom-alert-overlay");
+    if (existingOverlay) {
+        existingOverlay.remove();
+    }
+
+    const overlay = document.createElement("div");
+    overlay.className = "custom-alert-overlay";
+
+    const card = document.createElement("div");
+    card.className = `custom-alert-card alert-${type}`;
+    card.innerHTML = `
+        <span class="custom-alert-icon">${icon}</span>
+        <h3 class="custom-alert-title">${title}</h3>
+        <p class="custom-alert-message">${message}</p>
+        <button class="custom-alert-btn">موافق</button>
+    `;
+
+    overlay.appendChild(card);
+    document.body.appendChild(overlay);
+
+    requestAnimationFrame(() => {
+        overlay.classList.add("open");
+    });
+
+    const closeAlert = () => {
+        overlay.classList.remove("open");
+        setTimeout(() => {
+            overlay.remove();
+        }, 350);
+    };
+
+    card.querySelector(".custom-alert-btn").addEventListener("click", closeAlert);
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+            closeAlert();
+        }
+    });
+}
+
 // Neon toast banner helper
 function showNeonToast(title, message, onClickCallback) {
     let toastContainer = document.querySelector(".neon-toast-container");
     if (!toastContainer) {
         toastContainer = document.createElement("div");
         toastContainer.className = "neon-toast-container";
-        toastContainer.style.cssText = `
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            z-index: 9999;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
-        `;
         document.body.appendChild(toastContainer);
     }
     
     let toast = document.createElement("div");
     toast.className = "neon-toast";
-    toast.style.cssText = `
-        background: rgba(13, 17, 23, 0.9);
-        backdrop-filter: blur(15px);
-        -webkit-backdrop-filter: blur(15px);
-        border: 1px solid var(--neon);
-        box-shadow: 0 0 15px rgba(0, 255, 135, 0.2), 0 5px 15px rgba(0, 0, 0, 0.5);
-        border-radius: 10px;
-        padding: 14px 20px;
-        color: var(--text-primary);
-        width: 320px;
-        pointer-events: auto;
-        cursor: pointer;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        transform: translateY(50px) scale(0.9);
-        opacity: 0;
-        transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
-    `;
     
     toast.innerHTML = `
-        <div style="font-weight: 800; font-size: 0.85rem; color: var(--neon); display: flex; justify-content: space-between; align-items: center;">
+        <div class="neon-toast-header">
             <span>${title}</span>
-            <span style="font-size: 1.2rem; cursor: pointer; color: var(--text-secondary); line-height: 1;" class="toast-close">&times;</span>
+            <span class="toast-close">&times;</span>
         </div>
-        <div style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">${message}</div>
+        <div class="neon-toast-message">${message}</div>
     `;
     
     toastContainer.appendChild(toast);
     
     requestAnimationFrame(() => {
-        toast.style.transform = "translateY(0) scale(1)";
-        toast.style.opacity = "1";
+        toast.classList.add("show");
     });
     
     toast.addEventListener("click", function(e) {
@@ -1650,8 +1819,7 @@ function showNeonToast(title, message, onClickCallback) {
     });
     
     function closeToast() {
-        toast.style.transform = "translateY(-20px) scale(0.9)";
-        toast.style.opacity = "0";
+        toast.classList.remove("show");
         setTimeout(() => {
             toast.remove();
         }, 400);
@@ -1962,52 +2130,7 @@ function initCartSystem() {
                 showNeonToast("⚠️ Empty Cart", "Please add items to your cart before checking out.");
                 return;
             }
-
-            // جمع تفاصيل المنتجات من السلة
-            let itemLines = "";
-            let grandTotal = 0;
-
-            cart.forEach(function(item, index) {
-                let lineTotal = item.price * item.quantity;
-                grandTotal += lineTotal;
-                itemLines += `🎮 ${item.title} - العدد: ${item.quantity} - السعر: $${lineTotal.toFixed(2)}\n`;
-            });
-
-            // صياغة الرسالة النصية بالعربي
-            let message = `السلام عليكم، حابب أطلب الـ Gaming Tools دي من موقع Neon Tech:\n\n`;
-            message += itemLines;
-            message += `\n💰 إجمالي الحساب: $${grandTotal.toFixed(2)}\n\n`;
-            message += `💳 طريقة الدفع المفضلة: (Instapay / كاش عند الاستلام)\n`;
-
-            // فتح الواتساب بالرسالة
-            let whatsappNumber = "966500438424";
-            let whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-
-            checkoutBtn.disabled = true;
-            let originalText = checkoutBtn.innerHTML;
-            checkoutBtn.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 8px; justify-content: center;">
-                    <div class="tracking-spinner" style="width: 16px; height: 16px; border-width: 2px;"></div>
-                    <span>Redirecting to WhatsApp...</span>
-                </div>
-            `;
-
-            setTimeout(function() {
-                // فتح رابط الواتساب
-                window.open(whatsappUrl, "_blank");
-
-                // تفريغ السلة بالكامل
-                cart = [];
-                saveCart();
-                renderCart();
-                closeCartDrawer();
-
-                checkoutBtn.disabled = false;
-                checkoutBtn.innerHTML = originalText;
-
-                playNotificationSound();
-                showNeonToast("📱 Order Sent to WhatsApp!", "Your order details have been sent. We'll contact you shortly!");
-            }, 1200);
+            openInvoiceModal();
         });
     }
 
@@ -2360,12 +2483,12 @@ function initAuth() {
             const name = document.getElementById("signup-name").value;
 
             if (password !== confirmPassword) {
-                alert("كلمتا المرور غير متطابقتين!");
+                showCustomAlert("حماية الحساب", "كلمتا المرور غير متطابقتين!", "error");
                 return;
             }
 
             if (password.length < 6) {
-                alert("يجب أن تكون كلمة المرور 6 أحرف على الأقل.");
+                showCustomAlert("حماية الحساب", "يجب أن تكون كلمة المرور 6 أحرف على الأقل.", "error");
                 return;
             }
 
@@ -2380,9 +2503,9 @@ function initAuth() {
             });
 
             if (error) {
-                alert("Error: " + error.message);
+                showCustomAlert("خطأ في إنشاء الحساب", error.message, "error");
             } else {
-                alert("تم إنشاء الحساب بنجاح! يرجى تسجيل الدخول.");
+                showCustomAlert("نجاح التسجيل", "تم إنشاء حسابك في NeonTech بنجاح! يرجى تسجيل الدخول الآن.", "success");
                 hideAllForms();
                 loginForm.style.display = "block";
             }
@@ -2402,7 +2525,7 @@ function initAuth() {
             });
 
             if (error) {
-                alert("Error: " + error.message);
+                showCustomAlert("خطأ في تسجيل الدخول", "البريد الإلكتروني أو كلمة المرور غير صحيحة، أو حدثت مشكلة: " + error.message, "error");
             } else {
                 checkUser();
             }
@@ -2419,9 +2542,9 @@ function initAuth() {
             });
 
             if (error) {
-                alert("Error: " + error.message);
+                showCustomAlert("خطأ في استعادة الحساب", error.message, "error");
             } else {
-                alert("تم إرسال رابط استعادة كلمة المرور إلى بريدك الإلكتروني!");
+                showCustomAlert("استعادة كلمة المرور", "تم إرسال رابط استعادة كلمة المرور لـ NeonTech إلى بريدك الإلكتروني بنجاح!", "success");
                 hideAllForms();
                 loginForm.style.display = "block";
             }
@@ -2436,12 +2559,12 @@ function initAuth() {
             const confirmNewPassword = document.getElementById("update-password-confirm").value;
 
             if (newPassword !== confirmNewPassword) {
-                alert("كلمتا المرور غير متطابقتين!");
+                showCustomAlert("تحديث كلمة المرور", "كلمتا المرور غير متطابقتين!", "error");
                 return;
             }
 
             if (newPassword.length < 6) {
-                alert("يجب أن تكون كلمة المرور 6 أحرف على الأقل.");
+                showCustomAlert("تحديث كلمة المرور", "يجب أن تكون كلمة المرور 6 أحرف على الأقل.", "error");
                 return;
             }
 
@@ -2450,9 +2573,9 @@ function initAuth() {
             });
 
             if (error) {
-                alert("حدث خطأ أثناء تحديث كلمة المرور: " + error.message);
+                showCustomAlert("خطأ في التحديث", "حدث خطأ أثناء تحديث كلمة المرور: " + error.message, "error");
             } else {
-                alert("تم تحديث كلمة المرور بنجاح!");
+                showCustomAlert("تم التحديث", "تم تحديث كلمة مرور حسابك في NeonTech بنجاح!", "success");
                 hideAllForms();
                 checkUser();
                 
@@ -2473,7 +2596,7 @@ function initAuth() {
                 }
             });
             if (error) {
-                alert("حدث خطأ في تسجيل الدخول بجوجل: " + error.message);
+                showCustomAlert("تسجيل الدخول - NeonTech", "حدث خطأ في تسجيل دخول NeonTech عبر جوجل: " + error.message, "error");
             }
         });
     });
@@ -2559,3 +2682,517 @@ initAuth();
         });
     }
 }());
+
+/* ── Newsletter Subscription Handler ── */
+function initNewsletterSubscription() {
+    const newsletterForm = document.querySelector(".newsletter-form");
+    if (!newsletterForm) return;
+
+    newsletterForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const emailInput = newsletterForm.querySelector("input[type='email']");
+        if (!emailInput) return;
+
+        const email = emailInput.value.trim();
+        if (!email) return;
+
+        // Simple validation check
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showCustomAlert("📬 اشتراك النشرة البريدية", "يرجى إدخال بريد إلكتروني صحيح وصالح.", "warning");
+            return;
+        }
+
+        try {
+            if (supabaseClient) {
+                // Attempt to insert to database table 'newsletter'
+                const { error } = await supabaseClient.from('newsletter').insert([{ email }]);
+                if (error) {
+                    console.log("Supabase insert bypassed (local simulation fallback):", error.message);
+                }
+            }
+
+            // Fallback & client-side persistence
+            let subscribers = JSON.parse(localStorage.getItem("neontech_subscribers") || "[]");
+            if (!subscribers.includes(email)) {
+                subscribers.push(email);
+                localStorage.setItem("neontech_subscribers", JSON.stringify(subscribers));
+            }
+
+            // Success alert
+            showCustomAlert(
+                "📬 تم الاشتراك بنجاح!",
+                `شكراً لك يا بطل! تم الاشتراك بالبريد الإلكتروني <strong style="color: #00ff87;">${email}</strong> في نشرة NeonTech البريدية بنجاح. استعد للحصول على أقوى عروض الجيمنج الحصرية!`,
+                "success"
+            );
+
+            // Clear input
+            emailInput.value = "";
+
+        } catch (err) {
+            console.error("Newsletter submission error:", err);
+            showCustomAlert("📬 اشتراك النشرة البريدية", "تم تسجيل اشتراكك بنجاح في NeonTech! شكراً لانضمامك إلينا.", "success");
+            emailInput.value = "";
+        }
+    });
+}
+
+initNewsletterSubscription();
+
+/* ── PWA: Service Worker Registration ── */
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js')
+                .then((registration) => {
+                    console.log('⚡ [PWA] Service Worker registered successfully with scope:', registration.scope);
+                })
+                .catch((error) => {
+                    console.warn('⚠️ [PWA] Service Worker registration failed:', error);
+                });
+        });
+    }
+}
+
+registerServiceWorker();
+
+/* ── Interactive RGB Gear Customizer ── */
+function initRGBCustomizer() {
+    if (document.getElementById("rgb-customizer")) return;
+    
+    const customizer = document.createElement("div");
+    customizer.id = "rgb-customizer";
+    customizer.className = "rgb-customizer-container no-print";
+    customizer.innerHTML = `
+        <button class="rgb-toggle-btn" aria-label="Toggle RGB Customizer">
+            <svg class="rgb-gear-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+        <div class="rgb-menu">
+            <div class="rgb-menu-header">
+                <h4>RGB GEAR GLOW</h4>
+                <button class="rgb-close-btn">&times;</button>
+            </div>
+            <p class="rgb-menu-subtitle">Customize NeonTech's gaming atmosphere:</p>
+            <div class="rgb-options">
+                <button class="rgb-option-btn theme-green active" data-theme="default" aria-label="Cyber Green">
+                    <span class="color-dot" style="background: #00ff87; color: #00ff87;"></span> Green
+                </button>
+                <button class="rgb-option-btn theme-pink" data-theme="pink" aria-label="Cyber Pink">
+                    <span class="color-dot" style="background: #ff007f; color: #ff007f;"></span> Pink
+                </button>
+                <button class="rgb-option-btn theme-cyan" data-theme="cyan" aria-label="Arctic Cyan">
+                    <span class="color-dot" style="background: #00f0ff; color: #00f0ff;"></span> Cyan
+                </button>
+                <button class="rgb-option-btn theme-gold" data-theme="gold" aria-label="Glorious Gold">
+                    <span class="color-dot" style="background: #ffde00; color: #ffde00;"></span> Gold
+                </button>
+            </div>
+            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0;"></div>
+            <p class="rgb-menu-subtitle" style="margin-bottom: 8px;">Base UI Theme:</p>
+            <div style="display: flex; gap: 8px;">
+                <button class="rgb-option-btn theme-mode-btn dark active" data-mode="dark" style="flex: 1; justify-content: center; padding: 6px; font-family: inherit; font-size: 0.82rem;">
+                    🌙 Dark
+                </button>
+                <button class="rgb-option-btn theme-mode-btn light" data-mode="light" style="flex: 1; justify-content: center; padding: 6px; font-family: inherit; font-size: 0.82rem;">
+                    ☀️ Light
+                </button>
+            </div>
+            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 12px 0;"></div>
+            <a href="viewer-3d.html" class="rgb-option-btn" style="justify-content: center; text-decoration: none; font-weight: bold; border-color: var(--neon); color: var(--neon); box-shadow: 0 0 8px rgba(0, 255, 135, 0.2); font-size: 0.82rem;">
+                🎮 3D HOLOGRAM ROOM
+            </a>
+        </div>
+    `;
+    
+    document.body.appendChild(customizer);
+    
+    const toggleBtn = customizer.querySelector(".rgb-toggle-btn");
+    const closeBtn = customizer.querySelector(".rgb-close-btn");
+    
+    toggleBtn.addEventListener("click", () => {
+        customizer.classList.toggle("open");
+    });
+    
+    closeBtn.addEventListener("click", () => {
+        customizer.classList.remove("open");
+    });
+    
+    document.addEventListener("click", (e) => {
+        if (!customizer.contains(e.target) && customizer.classList.contains("open")) {
+            customizer.classList.remove("open");
+        }
+    });
+    
+    // RGB Glow Options
+    const optionBtns = customizer.querySelectorAll(".rgb-option-btn[data-theme]");
+    const savedTheme = localStorage.getItem("neontech-rgb-theme") || "default";
+    applyThemeClass(savedTheme);
+    
+    optionBtns.forEach(btn => {
+        const theme = btn.getAttribute("data-theme");
+        if (theme === savedTheme) {
+            optionBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+        }
+        
+        btn.addEventListener("click", () => {
+            optionBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            
+            const selectedTheme = btn.getAttribute("data-theme");
+            localStorage.setItem("neontech-rgb-theme", selectedTheme);
+            applyThemeClass(selectedTheme);
+            
+            showNeonToast("🎮 RGB Profile Synced", `Atmosphere shifted to ${btn.innerText.trim()}.`);
+        });
+    });
+    
+    function applyThemeClass(theme) {
+        document.body.classList.remove("theme-pink", "theme-cyan", "theme-gold");
+        if (theme === "pink") {
+            document.body.classList.add("theme-pink");
+        } else if (theme === "cyan") {
+            document.body.classList.add("theme-cyan");
+        } else if (theme === "gold") {
+            document.body.classList.add("theme-gold");
+        }
+    }
+    
+    // Base Theme Mode setup (Light / Dark UI)
+    const modeBtns = customizer.querySelectorAll(".theme-mode-btn");
+    const savedMode = localStorage.getItem("neontech_theme") || "dark";
+    applyThemeMode(savedMode);
+    
+    modeBtns.forEach(btn => {
+        const mode = btn.getAttribute("data-mode");
+        if (mode === savedMode) {
+            modeBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+        }
+        
+        btn.addEventListener("click", () => {
+            modeBtns.forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            
+            const selectedMode = btn.getAttribute("data-mode");
+            localStorage.setItem("neontech_theme", selectedMode);
+            applyThemeMode(selectedMode);
+            
+            if (selectedMode === "light") {
+                showNeonToast("☀️ Light Mode Activated", "Atmosphere shifted to a bright workspace.");
+            } else {
+                showNeonToast("🌙 Dark Mode Activated", "Atmosphere shifted to deep stealth mode.");
+            }
+        });
+    });
+    
+    function applyThemeMode(mode) {
+        if (mode === "light") {
+            document.body.classList.add("light-theme");
+        } else {
+            document.body.classList.remove("light-theme");
+        }
+    }
+}
+
+initRGBCustomizer();
+
+/* ── Interactive Invoice Modal & Checkout ── */
+let activeDiscountPercent = 0;
+let appliedPromoCode = "";
+
+function initInvoiceModal() {
+    if (document.getElementById("invoice-modal")) return;
+    
+    const modal = document.createElement("div");
+    modal.id = "invoice-modal";
+    modal.className = "invoice-modal-overlay no-print";
+    modal.innerHTML = `
+        <div class="invoice-modal-content">
+            <div class="invoice-header">
+                <div class="invoice-logo">
+                    <div class="logo-icon" style="width:32px; height:32px; display:inline-block; vertical-align:middle; margin-right:8px;">
+                        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#00ff87"/>
+                        </svg>
+                    </div>
+                    <span>Neon<span style="color:#00ff87">Tech</span></span>
+                </div>
+                <div class="invoice-meta">
+                    <h3>RETAIL INVOICE</h3>
+                    <p>Date: <span id="invoice-date">--/--/----</span></p>
+                    <p>Order: <span id="invoice-id">#NT-XXXXX</span></p>
+                </div>
+            </div>
+            
+            <div class="invoice-separator"></div>
+            
+            <div class="invoice-billing">
+                <div>
+                    <strong>Billed To:</strong>
+                    <p id="invoice-user-name">Guest Gamer</p>
+                    <p id="invoice-user-email">guest@neontech.com</p>
+                </div>
+                <div style="text-align: right;">
+                    <strong>Seller Details:</strong>
+                    <p>NeonTech Gaming Store</p>
+                    <p>Salah Khaled — Owner</p>
+                    <p>salah@neontech.com</p>
+                </div>
+            </div>
+            
+            <div class="invoice-separator"></div>
+            
+            <table class="invoice-table">
+                <thead>
+                    <tr>
+                        <th style="text-align: left;">Product / Gear</th>
+                        <th style="text-align: center;">Qty</th>
+                        <th style="text-align: right;">Unit Price</th>
+                        <th style="text-align: right;">Total</th>
+                    </tr>
+                </thead>
+                <tbody id="invoice-items">
+                </tbody>
+            </table>
+            
+            <div class="invoice-separator"></div>
+            
+            <div class="invoice-summary-section">
+                <div class="promo-code-container">
+                    <label for="invoice-promo-input">Enter Promo Code:</label>
+                    <div class="promo-input-group">
+                        <input type="text" id="invoice-promo-input" placeholder="e.g. SALAH10" aria-label="Promo code input" />
+                        <button id="invoice-promo-apply-btn">Apply</button>
+                    </div>
+                    <p id="invoice-promo-status"></p>
+                </div>
+                
+                <div class="invoice-totals">
+                    <div class="totals-row">
+                        <span>Subtotal:</span>
+                        <span id="invoice-subtotal">$0.00</span>
+                    </div>
+                    <div class="totals-row discount-row" style="display: none; color: #ff007f;">
+                        <span>Discount (<span id="invoice-discount-percent">0</span>%):</span>
+                        <span id="invoice-discount-val">-$0.00</span>
+                    </div>
+                    <div class="totals-row">
+                        <span>VAT (15%):</span>
+                        <span id="invoice-tax">$0.00</span>
+                    </div>
+                    <div class="totals-row">
+                        <span>Shipping:</span>
+                        <span style="color: #00ff87; font-weight: bold;">FREE</span>
+                    </div>
+                    <div class="invoice-separator" style="margin: 8px 0;"></div>
+                    <div class="totals-row grand-total-row">
+                        <span>Grand Total:</span>
+                        <span id="invoice-grand-total">$0.00</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="invoice-separator"></div>
+            
+            <div class="invoice-footer-notes">
+                <p>⚠️ Thank you for choosing NeonTech! Elite support is available 24/7 via Discord or WhatsApp.</p>
+                <p style="font-size: 0.7rem; opacity: 0.6; margin-top: 4px;">This is a computer generated invoice and requires no signature.</p>
+            </div>
+            
+            <div class="invoice-actions no-print">
+                <button class="invoice-btn-cancel">Close</button>
+                <button class="invoice-btn-print">Print Receipt</button>
+                <button class="invoice-btn-whatsapp">Send on WhatsApp</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.querySelector(".invoice-btn-cancel").addEventListener("click", () => {
+        modal.classList.remove("open");
+    });
+    
+    modal.querySelector("#invoice-promo-apply-btn").addEventListener("click", applyPromoCode);
+    modal.querySelector(".invoice-btn-print").addEventListener("click", () => window.print());
+    modal.querySelector(".invoice-btn-whatsapp").addEventListener("click", sendWhatsAppOrder);
+}
+
+function openInvoiceModal() {
+    initInvoiceModal();
+    
+    const modal = document.getElementById("invoice-modal");
+    if (!modal) return;
+    
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    modal.querySelector("#invoice-date").textContent = dateStr;
+    
+    const randomId = Math.floor(10000 + Math.random() * 90000);
+    modal.querySelector("#invoice-id").textContent = `#NT-${randomId}`;
+    
+    let userName = "Guest Gamer";
+    let userEmail = "guest@neontech.com";
+    
+    if (supabaseClient) {
+        supabaseClient.auth.getUser().then(({ data: { user } }) => {
+            if (user) {
+                userName = user.user_metadata?.full_name || user.email.split("@")[0];
+                userEmail = user.email;
+                modal.querySelector("#invoice-user-name").textContent = userName;
+                modal.querySelector("#invoice-user-email").textContent = userEmail;
+            }
+        });
+    }
+    
+    modal.querySelector("#invoice-user-name").textContent = userName;
+    modal.querySelector("#invoice-user-email").textContent = userEmail;
+    
+    const itemsTbody = modal.querySelector("#invoice-items");
+    itemsTbody.innerHTML = "";
+    
+    let subtotal = 0;
+    cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        subtotal += itemTotal;
+        
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>
+                <div class="invoice-item-title">${item.title}</div>
+                <div class="invoice-item-option">${item.options ? item.options : 'Standard Edition'}</div>
+            </td>
+            <td style="text-align: center;">${item.quantity}</td>
+            <td style="text-align: right;">$${item.price.toFixed(2)}</td>
+            <td style="text-align: right;">$${itemTotal.toFixed(2)}</td>
+        `;
+        itemsTbody.appendChild(row);
+    });
+    
+    activeDiscountPercent = 0;
+    appliedPromoCode = "";
+    modal.querySelector("#invoice-promo-input").value = "";
+    modal.querySelector("#invoice-promo-status").textContent = "";
+    modal.querySelector("#invoice-promo-status").className = "";
+    modal.querySelector(".discount-row").style.display = "none";
+    
+    updateInvoiceTotals(subtotal);
+    modal.classList.add("open");
+}
+
+function updateInvoiceTotals(subtotal) {
+    const modal = document.getElementById("invoice-modal");
+    if (!modal) return;
+    
+    const discountVal = subtotal * (activeDiscountPercent / 100);
+    const taxableAmount = subtotal - discountVal;
+    const taxVal = taxableAmount * 0.15;
+    const grandTotal = taxableAmount + taxVal;
+    
+    modal.querySelector("#invoice-subtotal").textContent = `$${subtotal.toFixed(2)}`;
+    
+    if (activeDiscountPercent > 0) {
+        modal.querySelector("#invoice-discount-percent").textContent = activeDiscountPercent;
+        modal.querySelector("#invoice-discount-val").textContent = `-$${discountVal.toFixed(2)}`;
+        modal.querySelector(".discount-row").style.display = "flex";
+    } else {
+        modal.querySelector(".discount-row").style.display = "none";
+    }
+    
+    modal.querySelector("#invoice-tax").textContent = `$${taxVal.toFixed(2)}`;
+    modal.querySelector("#invoice-grand-total").textContent = `$${grandTotal.toFixed(2)}`;
+}
+
+function applyPromoCode() {
+    const modal = document.getElementById("invoice-modal");
+    if (!modal) return;
+    
+    const promoInput = modal.querySelector("#invoice-promo-input").value.trim().toUpperCase();
+    const promoStatus = modal.querySelector("#invoice-promo-status");
+    
+    if (promoInput === "") {
+        promoStatus.textContent = "Please enter a code.";
+        promoStatus.className = "error";
+        return;
+    }
+    
+    if (promoInput === "SALAH10") {
+        activeDiscountPercent = 10;
+        appliedPromoCode = "SALAH10";
+        promoStatus.textContent = "🎉 Code applied! 10% discount deducted.";
+        promoStatus.className = "success";
+        
+        let subtotal = 0;
+        cart.forEach(item => {
+            subtotal += item.price * item.quantity;
+        });
+        updateInvoiceTotals(subtotal);
+        
+        showNeonToast("🎟️ Coupon Activated", "10% off has been applied to your invoice.");
+    } else {
+        promoStatus.textContent = "❌ Invalid code. Try SALAH10!";
+        promoStatus.className = "error";
+    }
+}
+
+function sendWhatsAppOrder() {
+    const modal = document.getElementById("invoice-modal");
+    if (!modal) return;
+    
+    const orderId = modal.querySelector("#invoice-id").textContent;
+    const subtotalText = modal.querySelector("#invoice-subtotal").textContent;
+    const taxText = modal.querySelector("#invoice-tax").textContent;
+    const grandTotalText = modal.querySelector("#invoice-grand-total").textContent;
+    
+    let itemLines = "";
+    cart.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        itemLines += `🎮 ${item.title} (${item.options ? item.options : 'Standard'})\n`;
+        itemLines += `   Qty: ${item.quantity} x $${item.price.toFixed(2)} = $${itemTotal.toFixed(2)}\n`;
+    });
+    
+    let message = `السلام عليكم، حابب أطلب الأدوات دي من موقع Neon Tech:\n\n`;
+    message += `📋 *تفاصيل الطلب (${orderId})*:\n`;
+    message += `----------------------------------------\n`;
+    message += itemLines;
+    message += `----------------------------------------\n`;
+    
+    message += `💰 *Subtotal*: ${subtotalText}\n`;
+    if (activeDiscountPercent > 0) {
+        message += `🎟️ *Discount (${activeDiscountPercent}%)*: ${appliedPromoCode} (-${modal.querySelector("#invoice-discount-val").textContent})\n`;
+    }
+    message += `📊 *VAT (15%)*: ${taxText}\n`;
+    message += `🚚 *Shipping*: FREE\n`;
+    message += `💸 *Grand Total*: *${grandTotalText}*\n\n`;
+    message += `💳 *طريقة الدفع*: كاش عند الاستلام أو Instapay\n\n`;
+    message += `شكرًا NeonTech!`;
+    
+    const whatsappNumber = "966500438424";
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+    
+    const whatsappBtn = modal.querySelector(".invoice-btn-whatsapp");
+    whatsappBtn.disabled = true;
+    const originalText = whatsappBtn.innerHTML;
+    whatsappBtn.innerHTML = `<span>Redirecting...</span>`;
+    
+    setTimeout(() => {
+        window.open(whatsappUrl, "_blank");
+        
+        cart = [];
+        saveCart();
+        renderCart();
+        closeCartDrawer();
+        
+        modal.classList.remove("open");
+        
+        whatsappBtn.disabled = false;
+        whatsappBtn.innerHTML = originalText;
+        
+        playNotificationSound();
+        showNeonToast("📱 Order Dispatched", "Your checkout sheet is opened in WhatsApp!");
+    }, 1200);
+}

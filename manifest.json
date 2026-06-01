@@ -1,0 +1,17 @@
+{
+  "name": "NeonTech — Premium Gaming Store",
+  "short_name": "NeonTech",
+  "description": "The premium destination for competitive gamers and tech enthusiasts. Curated gear, mechanical keyboards, headsets, monitors, and elite support.",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#080b0f",
+  "theme_color": "#00ff87",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "images/social-preview.png",
+      "sizes": "1200x630",
+      "type": "image/png"
+    }
+  ]
+}

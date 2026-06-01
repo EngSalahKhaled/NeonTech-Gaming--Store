@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service — NeonTech</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div class="progress-bar"></div> 
+
+  <!-- ═══ Navigation ═══════════════════════════════════════════════ -->
+  <header class="nav" role="banner">
+    <a href="index.html" class="nav-logo" aria-label="NeonTech Home">
+      <div class="logo-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+        </svg>
+      </div>
+      <div class="logo-text">Neon<span>Tech</span></div>
+    </a>
+
+    <form class="nav-search" role="search" action="index.html" method="GET">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="search" name="q" placeholder="Search products, brands…" aria-label="Search products" />
+    </form>
+
+    <nav class="nav-actions" aria-label="Quick actions">
+      <a href="#" class="nav-btn" aria-label="Notifications">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+        </svg>
+      </a>
+      <a href="#" class="nav-btn" id="user-account-btn" aria-label="User account">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+      </a>
+      <a href="#" class="nav-btn" aria-label="Shopping cart, 3 items">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        </svg>
+        <span class="cart-badge" aria-hidden="true">0</span>
+      </a>
+    </nav>
+  </header>
+
+  <!-- ═══ Main Content ═════════════════════════════════════════════ -->
+  <main class="info-page-container">
+    <h1 class="info-header-title">Terms of <span>Service</span></h1>
+    <span class="info-last-updated">LAST REVISED: JUNE 01, 2026</span>
+    
+    <div class="info-content">
+      <h2>1. Scope & Acceptance</h2>
+      <p>
+        By accessing, browsing, or utilizing the NeonTech Gaming Store, you represent that you have read, understood, and agreed to be fully bound by these Terms of Service. If you do not agree, please exit the site.
+      </p>
+
+      <h2>2. Products & Specifications</h2>
+      <p>
+        We make every reasonable effort to display actual photos, dimensions, specifications, and descriptions for all gaming products cataloged. All prices are calculated in USD and exclude shipping taxes.
+      </p>
+
+      <h2>3. Retail Order & Checkout Dispatch</h2>
+      <ul>
+        <li><strong>WhatsApp Checkout:</strong> When checking out, order ledgers are automatically compiled and re-routed directly to the seller via the WhatsApp wa.me API. A checkout dispatch does not represent a completed financial transaction; payment coordinates will be finalized inside the secure WhatsApp chat.</li>
+        <li><strong>Accepted Payments:</strong> We securely accept Cash on Delivery (COD), Instapay, and select Crypto assets.</li>
+        <li><strong>Coupon Code Policy:</strong> Discounts applied through promo codes (e.g. `SALAH10` for 10% off) must satisfy eligibility limits. Any misuse of promo codes will lead to order cancellation during seller confirmation.</li>
+      </ul>
+
+      <h2>4. Warranty & Support Policies</h2>
+      <p>
+        All hardware cataloged at NeonTech is protected under our standard pro-gamer replacement warranty. If you experience hardware failure under ordinary gaming conditions, contact our live support lines on Discord or WhatsApp immediately.
+      </p>
+
+      <h2>5. Site Content & Atmosphere Customization</h2>
+      <p>
+        All assets, stylesheets, scripts, custom alert systems, and RGB customizer widgets are the property of NeonTech, created by Salah Khaled. Users are granted a personal license to customize browser styling using our widgets. Any unauthorized reuse of the layout stylesheet or scripts is strictly prohibited.
+      </p>
+    </div>
+  </main>
+
+  <!-- ═══ Rich Footer ════════════════════════════════════════════════ -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand-logo">
+          <a href="index.html" class="nav-logo" aria-label="NeonTech Home" style="display:inline-flex;">
+            <div class="logo-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+              </svg>
+            </div>
+            <div class="logo-text">Neon<span>Tech</span></div>
+          </a>
+        </div>
+        <p class="footer-brand-desc">
+          The premium destination for competitive gamers and tech enthusiasts.
+          Curated gear, unbeatable prices, and obsessive customer support.
+        </p>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Shop</h3>
+        <ul class="footer-links">
+          <li><a href="index.html">New Arrivals</a></li>
+          <li><a href="index.html">Best Sellers</a></li>
+          <li><a href="index.html">Controllers</a></li>
+          <li><a href="index.html">Headsets</a></li>
+          <li><a href="index.html">Keyboards</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Support</h3>
+        <ul class="footer-links">
+          <li><a href="index.html">Help Center</a></li>
+          <li><a href="index.html">Warranty Claims</a></li>
+          <li><a href="index.html">Contact Us</a></li>
+        </ul>
+      </div>
+
+      <div>
+        <h3 class="footer-col-title">Company</h3>
+        <ul class="footer-links">
+          <li><a href="about.html">About NeonTech</a></li>
+          <li><a href="privacy.html">Privacy Policy</a></li>
+          <li><a href="terms.html">Terms of Service</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-copy">
+        &copy; 2026 NeonTech &mdash; Created By <a href="https://salahkhaled.com" target="_blank" rel="noopener noreferrer" style="color: var(--neon); text-decoration: none; font-weight: 600;">Salah Khaled</a>
+      </p>
+      <div class="footer-bottom-links">
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="terms.html">Terms of Service</a>
+        <a href="cookies.html">Cookie Settings</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="main.js"></script>
+</body>
+</html>

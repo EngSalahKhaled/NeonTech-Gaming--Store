@@ -2752,6 +2752,35 @@ function initAuth() {
     const displayUserName = document.getElementById("auth-user-name");
     const navUserName = document.getElementById("user-display-name");
 
+    // Pre-fill or block autocomplete based on Remember Me checkbox state
+    const rememberCheckbox = document.getElementById("login-remember");
+    const loginEmailInput = document.getElementById("login-email");
+    const loginPassInput = document.getElementById("login-password");
+    
+    if (localStorage.getItem("neontech_save_creds") === "true") {
+        try {
+            const savedEmail = atob(localStorage.getItem("neontech_email") || "");
+            const savedPass = atob(localStorage.getItem("neontech_pass") || "");
+            if (loginEmailInput) loginEmailInput.value = savedEmail;
+            if (loginPassInput) loginPassInput.value = savedPass;
+            if (rememberCheckbox) rememberCheckbox.checked = true;
+            
+            const signupRemember = document.getElementById("signup-remember");
+            if (signupRemember) signupRemember.checked = true;
+        } catch (e) {
+            console.warn("Error decoding remembered credentials:", e);
+        }
+    } else {
+        // Explicitly set autocomplete to prevent browser auto-saving without explicit checkbox check
+        if (loginEmailInput) loginEmailInput.setAttribute("autocomplete", "off");
+        if (loginPassInput) loginPassInput.setAttribute("autocomplete", "new-password");
+        
+        const signupEmail = document.getElementById("signup-email");
+        const signupPass = document.getElementById("signup-password");
+        if (signupEmail) signupEmail.setAttribute("autocomplete", "off");
+        if (signupPass) signupPass.setAttribute("autocomplete", "new-password");
+    }
+
     function hideAllForms() {
         if(loginForm) loginForm.style.display = "none";
         if(signupForm) signupForm.style.display = "none";
@@ -2780,33 +2809,26 @@ function initAuth() {
         });
     }
 
-    // Switch Forms
-    if (switchSignup) {
-        switchSignup.addEventListener("click", (e) => {
-            e.preventDefault();
-            hideAllForms();
-            signupForm.style.display = "block";
-        });
-    }
-    if (switchLogin) {
-        switchLogin.addEventListener("click", (e) => {
-            e.preventDefault();
-            hideAllForms();
-            loginForm.style.display = "block";
-        });
-    }
-    if (switchForgot) {
-        switchForgot.addEventListener("click", (e) => {
-            e.preventDefault();
-            hideAllForms();
-            forgotForm.style.display = "block";
-        });
-    }
-    if (forgotToLogin) {
-        forgotToLogin.addEventListener("click", (e) => {
-            e.preventDefault();
-            hideAllForms();
-            loginForm.style.display = "block";
+    // Switch Forms via Event Delegation (resilient to dynamic translation InnerHTML changes)
+    if (authModal) {
+        authModal.addEventListener("click", (e) => {
+            const signupLink = e.target.closest("#switch-to-signup");
+            const loginLink = e.target.closest("#switch-to-login") || e.target.closest("#forgot-to-login");
+            const forgotLink = e.target.closest("#switch-to-forgot");
+            
+            if (signupLink) {
+                e.preventDefault();
+                hideAllForms();
+                if (signupForm) signupForm.style.display = "block";
+            } else if (loginLink) {
+                e.preventDefault();
+                hideAllForms();
+                if (loginForm) loginForm.style.display = "block";
+            } else if (forgotLink) {
+                e.preventDefault();
+                hideAllForms();
+                if (forgotForm) forgotForm.style.display = "block";
+            }
         });
     }
 
@@ -2863,6 +2885,7 @@ function initAuth() {
             const password = document.getElementById("signup-password").value;
             const confirmPassword = document.getElementById("signup-password-confirm").value;
             const name = document.getElementById("signup-name").value;
+            const rememberCheckbox = document.getElementById("signup-remember");
 
             if (password !== confirmPassword) {
                 showCustomAlert("حماية الحساب", "كلمتا المرور غير متطابقتين!", "error");
@@ -2887,6 +2910,18 @@ function initAuth() {
             if (error) {
                 showCustomAlert("خطأ في إنشاء الحساب", error.message, "error");
             } else {
+                if (rememberCheckbox && rememberCheckbox.checked) {
+                    localStorage.setItem("neontech_save_creds", "true");
+                    localStorage.setItem("neontech_email", btoa(email));
+                    localStorage.setItem("neontech_pass", btoa(password));
+                    // Update login remember checkbox state too!
+                    const loginRemember = document.getElementById("login-remember");
+                    if (loginRemember) loginRemember.checked = true;
+                } else {
+                    localStorage.removeItem("neontech_save_creds");
+                    localStorage.removeItem("neontech_email");
+                    localStorage.removeItem("neontech_pass");
+                }
                 showCustomAlert("نجاح التسجيل", "تم إنشاء حسابك في NeonTech بنجاح! يرجى تسجيل الدخول الآن.", "success");
                 hideAllForms();
                 loginForm.style.display = "block";
@@ -2900,6 +2935,7 @@ function initAuth() {
             e.preventDefault();
             const email = document.getElementById("login-email").value;
             const password = document.getElementById("login-password").value;
+            const rememberCheckbox = document.getElementById("login-remember");
 
             const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email,
@@ -2909,6 +2945,15 @@ function initAuth() {
             if (error) {
                 showCustomAlert("خطأ في تسجيل الدخول", "البريد الإلكتروني أو كلمة المرور غير صحيحة، أو حدثت مشكلة: " + error.message, "error");
             } else {
+                if (rememberCheckbox && rememberCheckbox.checked) {
+                    localStorage.setItem("neontech_save_creds", "true");
+                    localStorage.setItem("neontech_email", btoa(email));
+                    localStorage.setItem("neontech_pass", btoa(password));
+                } else {
+                    localStorage.removeItem("neontech_save_creds");
+                    localStorage.removeItem("neontech_email");
+                    localStorage.removeItem("neontech_pass");
+                }
                 checkUser();
             }
         });
@@ -3361,7 +3406,7 @@ function initInvoiceModal() {
                 <div class="promo-code-container">
                     <label for="invoice-promo-input">Enter Promo Code:</label>
                     <div class="promo-input-group">
-                        <input type="text" id="invoice-promo-input" placeholder="e.g. SALAH10" aria-label="Promo code input" />
+                        <input type="text" id="invoice-promo-input" placeholder="e.g. GAMERS10" aria-label="Promo code input" />
                         <button id="invoice-promo-apply-btn">Apply</button>
                     </div>
                     <p id="invoice-promo-status"></p>
@@ -3518,9 +3563,9 @@ function applyPromoCode() {
         return;
     }
     
-    if (promoInput === "SALAH10") {
+    if (promoInput === "GAMERS10") {
         activeDiscountPercent = 10;
-        appliedPromoCode = "SALAH10";
+        appliedPromoCode = "GAMERS10";
         promoStatus.textContent = activeLang === "ar" ? "🎉 تم تطبيق الكود! خصم 10% مقتطع." : "🎉 Code applied! 10% discount deducted.";
         promoStatus.className = "success";
         
@@ -3537,7 +3582,7 @@ function applyPromoCode() {
             showNeonToast("🎟️ Coupon Activated", "10% off has been applied to your invoice.");
         }
     } else {
-        promoStatus.textContent = activeLang === "ar" ? "❌ كود غير صحيح. جرب SALAH10!" : "❌ Invalid code. Try SALAH10!";
+        promoStatus.textContent = activeLang === "ar" ? "❌ كود غير صحيح. جرب GAMERS10!" : "❌ Invalid code. Try GAMERS10!";
         promoStatus.className = "error";
     }
 }
@@ -4192,7 +4237,7 @@ function translatePage(lang) {
         
         if (titleEl) titleEl.textContent = t.exitTitle;
         if (descEl) {
-            descEl.innerHTML = `${t.exitDesc} <span class="coupon-code">SALAH10</span>`;
+            descEl.innerHTML = `${t.exitDesc} <span class="coupon-code">GAMERS10</span>`;
         }
         if (closeBtnEl && closeBtnEl.tagName !== "BUTTON") {
             closeBtnEl.textContent = "×";
@@ -4819,6 +4864,9 @@ function translatePage(lang) {
             if (switchText) {
                 switchText.innerHTML = `ليس لديك حساب؟ <a href="#" id="switch-to-signup" style="color: var(--neon); text-decoration: none;">إنشاء حساب جديد</a>`;
             }
+            
+            const rememberLabel = loginForm.querySelector("label[for='login-remember']");
+            if (rememberLabel) rememberLabel.textContent = "حفظ كلمة المرور في هذا المتصفح";
         }
 
         // Signup Form
@@ -4862,6 +4910,9 @@ function translatePage(lang) {
             if (switchText) {
                 switchText.innerHTML = `لديك حساب بالفعل؟ <a href="#" id="switch-to-login" style="color: var(--neon); text-decoration: none;">تسجيل الدخول</a>`;
             }
+            
+            const rememberLabel = signupForm.querySelector("label[for='signup-remember']");
+            if (rememberLabel) rememberLabel.textContent = "حفظ كلمة المرور في هذا المتصفح";
         }
 
         // ================= HOMEPAGE STATIC AND PRODUCT CARD TRANSLATIONS =================
@@ -5690,8 +5741,8 @@ function initSupportChatbot() {
         else if (id === "coupon") {
             setTimeout(() => {
                 const couponResponse = activeLang === "ar"
-                    ? `🎟️ مروق عليك يا صديقي! صلاح معطيك كود خصم حصري للقيمنق:<br><br><strong style="font-family: monospace; font-size:1.1rem; color:var(--neon);">SALAH10</strong><br><br>يمنحك 10% خصم إضافي على المجموع الفرعي وجميع المنتجات بالسلة عند المزامنة والتشيك أوت!`
-                    : `🎟️ Got you sorted, buddy! Salah secured an exclusive VIP gaming promo for you:<br><br><strong style="font-family: monospace; font-size:1.1rem; color:var(--neon);">SALAH10</strong><br><br>Gives 10% off on your cart items upon validation & checkout sheet!`;
+                    ? `🎟️ مروق عليك يا صديقي! صلاح معطيك كود خصم حصري للقيمنق:<br><br><strong style="font-family: monospace; font-size:1.1rem; color:var(--neon);">GAMERS10</strong><br><br>يمنحك 10% خصم إضافي على المجموع الفرعي وجميع المنتجات بالسلة عند المزامنة والتشيك أوت!`
+                    : `🎟️ Got you sorted, buddy! Salah secured an exclusive VIP gaming promo for you:<br><br><strong style="font-family: monospace; font-size:1.1rem; color:var(--neon);">GAMERS10</strong><br><br>Gives 10% off on your cart items upon validation & checkout sheet!`;
                 appendMessage("bot", couponResponse);
                 playNotificationSound();
             }, 600);

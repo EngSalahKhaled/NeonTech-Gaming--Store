@@ -71,7 +71,7 @@
 ### 🔔 Notifications & UX
 - **Neon Toast Notifications** for all actions
 - **Sound Effect** on checkout
-- **Exit-Intent Modal** — discount code popup (`SALAH10` — 10% off)
+- **Exit-Intent Modal** — discount code popup (`GAMERS10` — 10% off)
 
 ### ⚖️ Product Comparison
 - Compare up to **3 products** side by side in a modal table

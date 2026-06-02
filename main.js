@@ -2860,19 +2860,61 @@ function initAuth() {
         }
     }
 
-    // Check Recovery Mode using event listener
+    // ── Detect Password Recovery from URL Hash (fires immediately on load) ──
+    async function handleRecoveryFromHash() {
+        const hash = window.location.hash;
+
+        // Supabase puts: #access_token=...&type=recovery in the hash
+        if (!hash.includes("type=recovery")) return;
+
+        // Parse hash params
+        const params = {};
+        hash.replace(/^#/, "").split("&").forEach(part => {
+            const [k, v] = part.split("=");
+            if (k && v) params[k] = decodeURIComponent(v);
+        });
+
+        const accessToken  = params["access_token"];
+        const refreshToken = params["refresh_token"] || "";
+
+        if (!accessToken) return;
+
+        // Establish the session so updateUser() will work
+        try {
+            await supabaseClient.auth.setSession({
+                access_token:  accessToken,
+                refresh_token: refreshToken
+            });
+        } catch (e) {
+            console.warn("setSession error:", e);
+        }
+
+        // Open modal & show reset form immediately
+        authModal.classList.add("open");
+        hideAllForms();
+        if (updateForm) updateForm.style.display = "block";
+
+        // Clean hash from URL so refresh doesn't re-trigger
+        window.history.replaceState(null, null, window.location.pathname);
+    }
+
+    // Run hash detection right away (before any async delay)
+    handleRecoveryFromHash();
+
+    // Backup: onAuthStateChange fires when Supabase SDK processes the hash itself
     supabaseClient.auth.onAuthStateChange((event, session) => {
-        if (event === 'PASSWORD_RECOVERY') {
+        if (event === "PASSWORD_RECOVERY") {
             authModal.classList.add("open");
             hideAllForms();
-            if(updateForm) updateForm.style.display = "block";
+            if (updateForm) updateForm.style.display = "block";
+        } else if (event === "SIGNED_IN" && updateForm && updateForm.style.display !== "block") {
+            checkUser();
         }
     });
 
-    // Initial check (delayed slightly to allow onAuthStateChange to fire if recovery)
+    // Initial check — skip if recovery hash present (handleRecoveryFromHash handles it)
     setTimeout(async () => {
-        const hash = window.location.hash;
-        if (!hash.includes("type=recovery")) {
+        if (!window.location.hash.includes("type=recovery")) {
             checkUser();
         }
     }, 500);
@@ -5562,256 +5604,27 @@ window.syncUserCart = function(user) {
     }
 };
 
-// 6. Interactive Floating Support Chatbot System
+// 6. WhatsApp Navbar Button — Language Sync
 function initSupportChatbot() {
-    if (document.getElementById("neontech-support-chatbot")) return;
-    
-    const botContainer = document.createElement("div");
-    botContainer.id = "neontech-support-chatbot";
-    botContainer.style.position = "fixed";
-    botContainer.style.bottom = "30px";
-    botContainer.style.right = "30px";
-    botContainer.style.zIndex = "10000";
-    botContainer.style.fontFamily = "inherit";
-    
-    botContainer.innerHTML = `
-        <button id="chatbot-toggle-btn" style="width: 60px; height: 60px; border-radius: 50%; background: #080b0f; border: 2px solid var(--neon); color: var(--neon); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--neon); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); outline: none;">
-            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.5">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-        </button>
-        
-        <div id="chatbot-window" style="display: none; position: absolute; bottom: 80px; right: 0; width: 350px; height: 480px; background: #0c1017; border: 2px solid var(--border-subtle); border-radius: 12px; box-shadow: 0 0 30px rgba(0,255,135,0.15); flex-direction: column; overflow: hidden; transition: all 0.3s ease;">
-            <div style="background: rgba(0,255,135,0.05); padding: 15px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--neon); box-shadow: 0 0 10px var(--neon);"></div>
-                    <strong style="color: var(--text-primary); font-size: 0.95rem; font-family: monospace;">NeonTech Assistant v1.2</strong>
-                </div>
-                <button id="chatbot-close-btn" style="background: transparent; border: none; color: var(--text-secondary); font-size: 1.25rem; cursor: pointer;">&times;</button>
-            </div>
-            
-            <div id="chatbot-messages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem;"></div>
-            
-            <div id="chatbot-options" style="padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border-subtle); background: rgba(255,255,255,0.01);"></div>
-            
-            <div id="chatbot-input-row" style="display: none; padding: 10px 15px; border-top: 1px solid var(--border-subtle); background: rgba(0,0,0,0.2);">
-                <div style="display: flex; gap: 8px;">
-                    <input type="text" id="chatbot-text-input" placeholder="Type Order ID..." style="flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-primary); font-size: 0.8rem;" />
-                    <button id="chatbot-submit-btn" style="background: var(--neon); border: none; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Send</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    document.body.appendChild(botContainer);
-    
-    const toggleBtn = document.getElementById("chatbot-toggle-btn");
-    const chatWindow = document.getElementById("chatbot-window");
-    const closeBtn = document.getElementById("chatbot-close-btn");
-    
-    toggleBtn.addEventListener("click", () => {
-        const isOpen = chatWindow.style.display === "flex";
-        chatWindow.style.display = isOpen ? "none" : "flex";
-        if (!isOpen) {
-            toggleBtn.style.transform = "scale(0.9) rotate(90deg)";
-            toggleBtn.style.borderColor = "#ff007f";
-            toggleBtn.style.color = "#ff007f";
-            toggleBtn.style.boxShadow = "0 0 20px #ff007f";
-            playNotificationSound();
-        } else {
-            toggleBtn.style.transform = "none";
-            toggleBtn.style.borderColor = "var(--neon)";
-            toggleBtn.style.color = "var(--neon)";
-            toggleBtn.style.boxShadow = "0 0 20px var(--neon)";
-        }
-    });
-    
-    closeBtn.addEventListener("click", () => {
-        chatWindow.style.display = "none";
-        toggleBtn.style.transform = "none";
-        toggleBtn.style.borderColor = "var(--neon)";
-        toggleBtn.style.color = "var(--neon)";
-        toggleBtn.style.boxShadow = "0 0 20px var(--neon)";
-    });
-    
-    window.renderChatbot = function() {
-        const activeLang = localStorage.getItem("neontech_lang") || "en";
-        const messagesContainer = document.getElementById("chatbot-messages");
-        const optionsContainer = document.getElementById("chatbot-options");
-        const textInput = document.getElementById("chatbot-text-input");
-        const inputRow = document.getElementById("chatbot-input-row");
-        
-        messagesContainer.innerHTML = "";
-        optionsContainer.innerHTML = "";
-        inputRow.style.display = "none";
-        
-        const welcomeText = activeLang === "ar" 
-            ? "مرحباً بك في NeonTech! 🎮 أنا مساعدك الذكي. كيف يمكنني مساندتك اليوم لتطوير عتادك القيمنق؟"
-            : "Welcome to NeonTech! 🎮 I'm your digital support assistant. How can I help you level up your gaming rig today?";
-            
-        appendMessage("bot", welcomeText);
-        
-        const options = activeLang === "ar" ? [
-            { id: "track", text: "📦 تتبع طلبية" },
-            { id: "coupon", text: "🎟️ كود خصم إضافي" },
-            { id: "dpi", text: "⚙️ معايرة الماوس والشاشة" },
-            { id: "salah", text: "💬 تواصل مع المالك (صلاح)" }
-        ] : [
-            { id: "track", text: "📦 Track an Order" },
-            { id: "coupon", text: "🎟️ Extra Promo Code" },
-            { id: "dpi", text: "⚙️ DPI & Refresh Calibrator" },
-            { id: "salah", text: "💬 Chat with Salah (Owner)" }
-        ];
-        
-        options.forEach(opt => {
-            const btn = document.createElement("button");
-            btn.className = "chatbot-opt-btn";
-            btn.style.width = "100%";
-            btn.style.padding = "10px 15px";
-            btn.style.textAlign = activeLang === "ar" ? "right" : "left";
-            btn.style.background = "rgba(255,255,255,0.03)";
-            btn.style.border = "1px solid var(--border-subtle)";
-            btn.style.borderRadius = "6px";
-            btn.style.color = "var(--text-primary)";
-            btn.style.cursor = "pointer";
-            btn.style.transition = "all 0.2s ease";
-            btn.style.fontSize = "0.8rem";
-            
-            btn.addEventListener("mouseover", () => {
-                btn.style.background = "rgba(0, 255, 135, 0.05)";
-                btn.style.borderColor = "var(--neon)";
-            });
-            
-            btn.addEventListener("mouseleave", () => {
-                btn.style.background = "rgba(255,255,255,0.03)";
-                btn.style.borderColor = "var(--border-subtle)";
-            });
-            
-            btn.addEventListener("click", () => {
-                handleOptionClick(opt.id, opt.text);
-            });
-            
-            optionsContainer.appendChild(btn);
-        });
-        
-        textInput.placeholder = activeLang === "ar" ? "أدخل رقم الطلب (مثال #NT-54321)..." : "Type Order ID (e.g. #NT-54321)...";
-    };
-    
-    function appendMessage(sender, text) {
-        const messagesContainer = document.getElementById("chatbot-messages");
-        const bubble = document.createElement("div");
-        bubble.style.padding = "10px 14px";
-        bubble.style.borderRadius = "12px";
-        bubble.style.maxWidth = "80%";
-        bubble.style.lineHeight = "1.5";
-        bubble.style.animation = "fadeIn 0.3s ease forwards";
-        
-        if (sender === "bot") {
-            bubble.style.background = "rgba(255,255,255,0.03)";
-            bubble.style.color = "var(--text-primary)";
-            bubble.style.alignSelf = "flex-start";
-            bubble.style.borderLeft = "2px solid var(--neon)";
-        } else {
-            bubble.style.background = "var(--neon)";
-            bubble.style.color = "#000";
-            bubble.style.fontWeight = "550";
-            bubble.style.alignSelf = "flex-end";
-        }
-        
-        bubble.innerHTML = text;
-        messagesContainer.appendChild(bubble);
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    function applyWaLang() {
+        const lang  = localStorage.getItem("neontech_lang") || "en";
+        const isAr  = lang === "ar";
+        const waBtn = document.getElementById("wa-nav-btn");
+        if (!waBtn) return;
+
+        const msg = isAr
+            ? "مرحباً، أحتاج مساعدة من فريق دعم NeonTech 🎮"
+            : "Hello, I need help from NeonTech Support 🎮";
+
+        waBtn.href  = `https://wa.me/966500438424?text=${encodeURIComponent(msg)}`;
+        waBtn.title = isAr ? "واتساب — الدعم الفني" : "WhatsApp Support";
+        waBtn.setAttribute("aria-label", isAr ? "دعم واتساب" : "WhatsApp Support");
     }
-    
-    function handleOptionClick(id, text) {
-        const activeLang = localStorage.getItem("neontech_lang") || "en";
-        appendMessage("user", text);
-        
-        if (id === "track") {
-            const trackPrompt = activeLang === "ar"
-                ? "سأقوم بتتبع طلبك على الفور! يرجى إدخال رقم الطلب المكون من 5 أرقام (مثال #NT-54321) أدناه:"
-                : "I will track your package right away! Please type your 5-digit Order ID (e.g. #NT-54321) below:";
-            
-            setTimeout(() => {
-                appendMessage("bot", trackPrompt);
-                document.getElementById("chatbot-input-row").style.display = "block";
-                document.getElementById("chatbot-text-input").focus();
-            }, 600);
-        } 
-        else if (id === "coupon") {
-            setTimeout(() => {
-                const couponResponse = activeLang === "ar"
-                    ? `🎟️ مروق عليك يا صديقي! صلاح معطيك كود خصم حصري للقيمنق:<br><br><strong style="font-family: monospace; font-size:1.1rem; color:var(--neon);">GAMERS10</strong><br><br>يمنحك 10% خصم إضافي على المجموع الفرعي وجميع المنتجات بالسلة عند المزامنة والتشيك أوت!`
-                    : `🎟️ Got you sorted, buddy! Salah secured an exclusive VIP gaming promo for you:<br><br><strong style="font-family: monospace; font-size:1.1rem; color:var(--neon);">GAMERS10</strong><br><br>Gives 10% off on your cart items upon validation & checkout sheet!`;
-                appendMessage("bot", couponResponse);
-                playNotificationSound();
-            }, 600);
-        }
-        else if (id === "dpi") {
-            setTimeout(() => {
-                const dpiResponse = activeLang === "ar"
-                    ? `⚙️ <strong>أداة معايرة الأداء</strong>:<br><br>1. <strong>الماوس (DPI)</strong>: للعب التنافسي (Valorant/CS2) ننصح بـ 800 DPI وحساسية داخلية منخفضة. لـ MOBA ننصح بـ 1600 DPI.<br>2. <strong>الشاشة (Refresh)</strong>: تأكد من ضبط الإعدادات بنظام التشغيل على أقصى هرتز تدعمه شاشتك (مثلاً 240Hz). فعل G-Sync لإنهاء التقطيع!`
-                    : `⚙️ <strong>Performance Calibrator</strong>:<br><br>1. <strong>Mouse DPI</strong>: For competitive shooters (Valorant/CS2), target 800 DPI with low in-game sensitivity. For MOBAs, try 1600 DPI.<br>2. <strong>Monitor Refresh</strong>: Double check your OS adapter settings to ensure you are running at maximum native refresh (e.g., 240Hz). Enable G-Sync to end screen tearing!`;
-                appendMessage("bot", dpiResponse);
-            }, 600);
-        }
-        else if (id === "salah") {
-            setTimeout(() => {
-                const salahResponse = activeLang === "ar"
-                    ? `💬 <strong>أبشر يا غالي!</strong> يمكنك التواصل المباشر مع صلاح خالد (المالك والمهندس):<br><br>📱 جوال / واتساب: <a href="https://wa.me/966500438424" target="_blank" style="color: var(--neon); font-weight:bold;">966500438424+</a><br>📧 بريد: <span style="color:var(--neon);">salah@neontech.com</span><br><br>تواصل في أي وقت لتعديل تجميعتك أو حجز ألعابك!`
-                    : `💬 <strong>Connect with Salah Khaled</strong> (Owner & Lead Engineer):<br><br>📱 Mobile / WhatsApp: <a href="https://wa.me/966500438424" target="_blank" style="color: var(--neon); font-weight:bold;">+966500438424</a><br>📧 Email: <span style="color:var(--neon);">salah@neontech.com</span><br><br>Reach out anytime to calibrate your custom build or secure special reserve orders!`;
-                appendMessage("bot", salahResponse);
-            }, 600);
-        }
-    }
-    
-    const submitBtn = document.getElementById("chatbot-submit-btn");
-    const textInput = document.getElementById("chatbot-text-input");
-    
-    const handleTrackSubmit = () => {
-        const activeLang = localStorage.getItem("neontech_lang") || "en";
-        const val = textInput.value.trim();
-        if (!val) return;
-        
-        appendMessage("user", val);
-        textInput.value = "";
-        document.getElementById("chatbot-input-row").style.display = "none";
-        
-        const matches = val.match(/\d+/);
-        const orderNum = matches ? matches[0] : "54321";
-        
-        setTimeout(() => {
-            appendMessage("bot", activeLang === "ar" ? "⏳ جاري الاستعلام بقواعد البيانات ومزامنة الشحن..." : "⏳ Querying logistics pipeline and fetching parcel info...");
-            
-            setTimeout(() => {
-                const stages = activeLang === "ar" ? [
-                    "📦 <strong>المرحلة 1: تجهيز الشحنة</strong><br>تمت مراجعة الطلب وتجميع عتاد النيون الخاص بك وجاري تغليفه في مخازننا في الرياض.",
-                    "🚚 <strong>المرحلة 2: قيد التوصيل</strong><br>تم تسليم العبوة لشركة الشحن الشريكة (أرامكس) وهي الآن في طريقها إلى مدينتك.",
-                    "🎮 <strong>المرحلة 3: تم التوصيل!</strong><br>تم تسليم طلبية الجيمنج الخاصة بك للمشتري بنجاح. نتمنى لك فوزاً ساحقاً في اللعبة القادمة!"
-                ] : [
-                    "📦 <strong>Phase 1: Parcel Assembly</strong><br>Your high-end neon gear has been checked, combined, and is being securely packaged at our Riyadh warehouse.",
-                    "🚚 <strong>Phase 2: In Transit</strong><br>Parcel handed over to our shipping partner (Aramex) and is currently en route to your city dispatch station.",
-                    "🎮 <strong>Phase 3: Delivered!</strong><br>Your elite gear was successfully received. Victory is yours! Level up and enjoy the game!"
-                ];
-                
-                const index = parseInt(orderNum) % 3;
-                const result = stages[index];
-                
-                appendMessage("bot", `📋 <strong>Order #NT-${orderNum} Status</strong>:<br><br>${result}`);
-                playNotificationSound();
-            }, 1200);
-            
-        }, 600);
-    };
-    
-    submitBtn.addEventListener("click", handleTrackSubmit);
-    textInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-            handleTrackSubmit();
-        }
-    });
-    
-    window.renderChatbot();
+
+    applyWaLang();
+
+    // Keep renderChatbot so the language-switcher can call it
+    window.renderChatbot = function() { applyWaLang(); };
 }
 
 // Global Inits

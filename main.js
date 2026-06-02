@@ -11,6 +11,71 @@ if (typeof supabase !== 'undefined') {
     }
 }
 
+// دالة التحقق من تسجيل الدخول قبل أي عملية (إضافة للسلة أو شراء)
+async function requireAuth(onSuccess) {
+    let loggedIn = false;
+    
+    // 1. فحص حالة الـ UI أولاً (وهو الفحص الأكثر أماناً ومزامنة مع العميل)
+    const loggedInDiv = document.getElementById("auth-logged-in");
+    if (loggedInDiv && window.getComputedStyle(loggedInDiv).display !== "none") {
+        loggedIn = true;
+    }
+    
+    // 2. محاولة الفحص عبر Supabase Client إذا لم يكن متأكداً من الـ UI
+    if (!loggedIn && supabaseClient) {
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session && session.user) {
+                loggedIn = true;
+            }
+        } catch (error) {
+            console.warn("Supabase session check error:", error);
+        }
+    }
+    
+    // 3. محاولة الفحص عبر LocalStorage مع التحقق من انتهاء الصلاحية
+    if (!loggedIn) {
+        try {
+            const sbTokenKey = Object.keys(localStorage).find(key => key.startsWith("sb-") && key.endsWith("-auth-token"));
+            if (sbTokenKey) {
+                const tokenData = JSON.parse(localStorage.getItem(sbTokenKey));
+                const now = Math.floor(Date.now() / 1000);
+                if (tokenData && tokenData.user && tokenData.expires_at && tokenData.expires_at > now) {
+                    loggedIn = true;
+                }
+            }
+        } catch (e) {
+            console.warn("LocalStorage auth check error:", e);
+        }
+    }
+    
+    // 4. اتخاذ القرار بناءً على حالة تسجيل الدخول
+    if (loggedIn) {
+        onSuccess();
+    } else {
+        showCustomAlert(
+            "تسجيل الدخول مطلوب 🎮",
+            "يجب عليك تسجيل الدخول أولاً لتتمكن من إضافة المنتجات إلى السلة أو الشراء!",
+            "warning"
+        );
+        const authModal = document.getElementById("auth-modal");
+        if (authModal) {
+            authModal.classList.add("open");
+            // إظهار فورمة تسجيل الدخول وإخفاء الباقي
+            const loginForm = document.getElementById("login-form");
+            const signupForm = document.getElementById("signup-form");
+            const forgotForm = document.getElementById("forgot-password-form");
+            const updateForm = document.getElementById("update-password-form");
+            const loggedInDiv = document.getElementById("auth-logged-in");
+            if (loginForm) loginForm.style.display = "block";
+            if (signupForm) signupForm.style.display = "none";
+            if (forgotForm) forgotForm.style.display = "none";
+            if (updateForm) updateForm.style.display = "none";
+            if (loggedInDiv) loggedInDiv.style.display = "none";
+        }
+    }
+}
+
     let span = document.querySelector(".Up");
     let progressBar = document.querySelector(".progress-bar");
     let cards = document.querySelectorAll(".product-card");
@@ -154,13 +219,13 @@ if (typeof supabase !== 'undefined') {
     });
 
     // محاكاة عدد المشاهدين الحاليين للمنتج بشكل تفاعلي (Live Viewers Simulator)
-let viewersList = document.querySelectorAll(".viewers-count");
-setInterval(function () {
-    viewersList.forEach(function(viewer) {
-        let randomNumber = Math.floor(Math.random() * (12 - 3 + 1)) + 3;
-        viewer.innerHTML = randomNumber;
-    });
-}, 3000);
+    setInterval(function () {
+        let viewersList = document.querySelectorAll(".viewers-count");
+        viewersList.forEach(function(viewer) {
+            let randomNumber = Math.floor(Math.random() * (12 - 3 + 1)) + 3;
+            viewer.innerHTML = randomNumber;
+        });
+    }, 3000);
 // تفعيل تأثير الإمالة ثلاثية الأبعاد (3D Tilt Effect) وإضاءة النيون المتفاعلة مع حركة الماوس
 // تفعيل تأثير الإمالة ثلاثية الأبعاد (3D Tilt Effect) وإضاءة النيون المتفاعلة مع حركة الماوس
 function initTiltEffect() {
@@ -298,27 +363,7 @@ if (qtyInput && addCartBtn) {
         });
     });
 
-    // تشغيل زرار الـ Add to Cart (تأثير الإشعار الفوري مع طيران المنتج)
-    addCartBtn.onclick = function(e) {
-        e.preventDefault(); // منع إعادة تحميل الصفحة
-        
-        let cartBadge = document.querySelector(".cart-badge");
-        let cartBtn = cartBadge ? cartBadge.parentElement : null;
-        let img = document.querySelector("#main-product-img") || document.querySelector(".p-main-image-wrap img");
-        
-        if (!cartBadge || !cartBtn || !img) {
-            // حل بديل في حال عدم العثور على العناصر
-            let finalQty = qtyInput.value;
-            showToast(`🔥 عاش يا صلاح! تم إضافة (${finalQty}) قطع من المنتج إلى سلتك بنجاح.`);
-            return;
-        }
 
-        let qty = parseInt(qtyInput.value) || 1;
-        if (qty < 1) qty = 1;
-
-        let successMessage = `🔥 عاش يا صلاح! تم إضافة (${qty}) قطع من المنتج إلى سلتك بنجاح.`;
-        animateFly(img, cartBtn, cartBadge, qty, successMessage);
-    };
 
     // تفعيل تبديل الصور من المصغرات (Product Gallery Thumbnails Switcher)
     let thumbBtns = document.querySelectorAll(".thumb-btn");
@@ -341,6 +386,23 @@ if (qtyInput && addCartBtn) {
 
     thumbBtns.forEach(function(btn) {
         btn.addEventListener("click", function(e) {
+            // التحقق مما إذا كان الزر عبارة عن label مرتبط بخيار لون راديو
+            let labelFor = btn.getAttribute("for");
+            if (labelFor) {
+                let radioInput = document.getElementById(labelFor);
+                if (radioInput) {
+                    radioInput.checked = true;
+                    // تفعيل حدث change لتشغيل ممعالجات الراديو ديناميكياً
+                    radioInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    
+                    // تمييز المصغر النشط
+                    thumbBtns.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    return; // نترك مستمع الراديو يقوم بباقي العمل لتفادي التكرار
+                }
+            }
+            
+            // السلوك الافتراضي للمنتجات ذات الصورة الواحدة (مثل RTX 5090)
             e.preventDefault();
             
             thumbBtns.forEach(b => b.classList.remove("active"));
@@ -354,6 +416,137 @@ if (qtyInput && addCartBtn) {
                 }
             }
         });
+    });
+
+    // تفعيل معالجة تبديل خيارات الألوان من خلال الراديو مباشرة (Product Colors Form Switcher)
+    let colorRadioButtons = document.querySelectorAll('input[name="color-opt"]');
+    if (colorRadioButtons.length > 0) {
+        colorRadioButtons.forEach(function(radio) {
+            radio.addEventListener("change", function() {
+                let val = radio.value;
+                
+                // 1. تبديل الصورة الرئيسية للمنتج (إخفاء الكل وإظهار المختار بـ JS كدعم إضافي للـ CSS)
+                let allMainImgs = document.querySelectorAll(".p-main-image-wrap .p-main-img");
+                if (allMainImgs.length > 0) {
+                    allMainImgs.forEach(img => {
+                        img.style.display = "none";
+                    });
+                    let selectedImg = document.querySelector(`.p-main-image-wrap .img-${val}`);
+                    if (selectedImg) {
+                        selectedImg.style.display = "block";
+                    }
+                }
+                
+                // 2. تحديث نص اسم اللون المحدد في الواجهة
+                let labelContainer = radio.closest(".option-group");
+                if (labelContainer) {
+                    let selectedValEl = labelContainer.querySelector(".selected-val");
+                    if (selectedValEl) {
+                        let colorNames = {
+                            "carbon": "Carbon Black",
+                            "white": "White Edition",
+                            "red": "Red Edition",
+                            "blue": "Blue Edition"
+                        };
+                        // تعديل مسمى اللون للكرسي Titan Evo
+                        if (document.title.includes("Secretlab") || document.title.includes("Titan")) {
+                            colorNames["carbon"] = "Stealth Black";
+                        }
+                        
+                        let engColor = colorNames[val] || val;
+                        const activeLang = localStorage.getItem("neontech_lang") || "en";
+                        if (activeLang === "ar") {
+                            selectedValEl.textContent = staticPhrases[engColor.toLowerCase()] || engColor;
+                        } else {
+                            selectedValEl.textContent = engColor;
+                        }
+                    }
+                }
+                
+                // 3. مزامنة كلاس active مع المصغر النشط
+                let thumbBtns = document.querySelectorAll(".p-thumb-grid .thumb-btn");
+                thumbBtns.forEach(btn => btn.classList.remove("active"));
+                
+                let matchingThumb = document.querySelector(`.p-thumb-grid .thumb-btn[for="${radio.id}"]`);
+                if (matchingThumb) {
+                    matchingThumb.classList.add("active");
+                }
+            });
+        });
+    }
+
+    // تفعيل معالجة تبديل الخيارات وتحديث النص ديناميكياً مع دعم الترجمة الفورية للعربية (Dynamic Bilingual Option Selections Switcher)
+    document.addEventListener("change", function(e) {
+        if (e.target && e.target.closest(".option-selectors") && e.target.type === "radio") {
+            const radio = e.target;
+            const group = radio.closest(".option-group");
+            if (!group) return;
+            const selectedValEl = group.querySelector(".selected-val");
+            if (!selectedValEl) return;
+            
+            const activeLang = localStorage.getItem("neontech_lang") || "en";
+            
+            // Get option display text from pill button or input value
+            const pillBtn = radio.nextElementSibling;
+            let displayVal = "";
+            if (pillBtn && pillBtn.classList.contains("opt-pill-btn")) {
+                displayVal = pillBtn.textContent.trim();
+            } else {
+                displayVal = radio.value;
+            }
+            
+            if (activeLang === "ar") {
+                let rawValue = radio.value;
+                let valueMapping = {
+                    "carbon": "Carbon Black",
+                    "white": "White Edition",
+                    "red": "Red Edition",
+                    "blue": "Blue Edition",
+                    "1000": "1000Hz (Standard)",
+                    "8000": "8000Hz (Dongle Needed)",
+                    "128": "128GB Storage",
+                    "512": "512GB Storage (+$120)",
+                    "standard": "Standard Soft Strap",
+                    "elite": "Elite Battery Strap (+$100)",
+                    "leatherette": "Premium Leatherette",
+                    "fabric": "Breathable Fabric Mesh",
+                    "regular": "Regular (170-189cm)",
+                    "xl": "XL (190-200cm)",
+                    "small": "Small (Under 170cm)",
+                    "gl-tactile": "GL Tactile (Quiet)",
+                    "gl-clicky": "GL Clicky (Audible)",
+                    "gl-linear": "GL Linear (Smooth)",
+                    "founders": "Founders Edition (Triple-Slot Fan)",
+                    "triple-fan": "Custom OC (Triple-Slot Fan)",
+                    "liquid": "Liquid Cooled AIO",
+                    "32gb": "32GB GDDR7",
+                    "48gb": "48GB GDDR7",
+                    "matte": "Anti-Glare Matte",
+                    "glossy": "Glossy AR Glass",
+                    "27-360": "27\" WQHD 360Hz",
+                    "32-240": "32\" 4K UHD 240Hz",
+                    "dual-mode": "Dual Mini-LED (UHD+ 120Hz / FHD+ 240Hz)",
+                    "oled-mode": "QHD OLED 240Hz",
+                    "32gb-2tb": "32GB RAM + 2TB SSD",
+                    "64gb-4tb": "64GB RAM + 4TB SSD",
+                    "standard-grip": "Standard Grip",
+                    "sticky-grip": "Pro Sticky Grip",
+                    "hybrid-leather": "NEO Hybrid Leatherette",
+                    "softweave": "SoftWeave Plus Fabric",
+                    "nappa": "Premium Napa Leather"
+                };
+                
+                let englishVal = valueMapping[rawValue] || displayVal;
+                if (rawValue === "carbon" && (document.title.includes("Secretlab") || document.title.includes("Titan"))) {
+                    englishVal = "Stealth Black";
+                }
+                
+                let translatedVal = staticPhrases[englishVal.toLowerCase().trim()] || displayVal;
+                selectedValEl.textContent = translatedVal;
+            } else {
+                selectedValEl.textContent = displayVal;
+            }
+        }
     });
 
     // تفعيل العدسة المكبرة لصورة المنتج (Product Image Zoom Loupe)
@@ -496,17 +689,18 @@ function initFlyToCart() {
         cardCartBtns.forEach(function(btn) {
             btn.addEventListener("click", function(e) {
                 e.preventDefault();
-                
-                // البحث عن الكارت الحاضن والصورة
-                let card = btn.closest(".product-card");
-                if (!card) return;
-                let img = card.querySelector(".card-image img");
-                if (!img) return;
+                requireAuth(() => {
+                    // البحث عن الكارت الحاضن والصورة
+                    let card = btn.closest(".product-card");
+                    if (!card) return;
+                    let img = card.querySelector(".card-image img");
+                    if (!img) return;
 
-                let productName = card.querySelector(".card-title a")?.innerText || "المنتج";
-                let successMessage = `🔥 تم إضافة <strong>${productName}</strong> إلى سلتك بنجاح!`;
+                    let productName = card.querySelector(".card-title a")?.innerText || "المنتج";
+                    let successMessage = `🔥 تم إضافة <strong>${productName}</strong> إلى سلتك بنجاح!`;
 
-                animateFly(img, globalCartBtn, globalCartBadge, 1, successMessage);
+                    animateFly(img, globalCartBtn, globalCartBadge, 1, successMessage);
+                });
             });
         });
     }
@@ -897,7 +1091,12 @@ function initLiveSearch() {
             applyCombinedFilters(true);
             checkCards();
             isPaginationLoading = false;
-            showNeonToast("⚡ More Gear Loaded", "Next set of elite items are ready.");
+            const activeLang = localStorage.getItem("neontech_lang") || "en";
+            if (activeLang === "ar") {
+                showNeonToast("⚡ تم تحميل المزيد من العتاد", "المجموعة التالية من الأجهزة الاحترافية جاهزة الآن.");
+            } else {
+                showNeonToast("⚡ More Gear Loaded", "Next set of elite items are ready.");
+            }
         }, 1000);
     }
 
@@ -1093,8 +1292,8 @@ function initProductComparison() {
 
             headerCols += `
                 <td>
-                    <img class="comp-product-img" src="${item.image}" alt="${item.title}">
-                    <div class="comp-product-name">${item.title}</div>
+                    <img class="comp-product-img" src="${item.image}" alt="${getTranslatedProductTitle(item.title)}">
+                    <div class="comp-product-name">${getTranslatedProductTitle(item.title)}</div>
                 </td>
             `;
             categoryCols += `<td>${item.category}</td>`;
@@ -1512,28 +1711,71 @@ function initNotificationsCenter() {
 
     function renderNotifications() {
         listContainer.innerHTML = "";
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        
+        // Translate header elements
+        const headerTitle = dropdown.querySelector(".notif-header h3");
+        if (headerTitle) {
+            headerTitle.textContent = activeLang === "ar" ? "الإشعارات" : "Notifications";
+        }
+        const clearBtn = dropdown.querySelector(".notif-clear-all");
+        if (clearBtn) {
+            clearBtn.textContent = activeLang === "ar" ? "مسح الكل" : "Clear All";
+        }
         
         if (notifications.length === 0) {
             listContainer.innerHTML = `
                 <div class="notif-empty">
                     <span>🔔</span>
-                    <p>No new notifications</p>
+                    <p>${activeLang === "ar" ? "لا توجد إشعارات جديدة" : "No new notifications"}</p>
                 </div>
             `;
             removeBadge();
             return;
         }
 
+        const notifMap = {
+            "order shipped!": { title: "تم شحن الطلب! 📦", desc: "طلبك رقم #1020 تم شحنه وهو في طريقه إليك الآن." },
+            "cyber deal unlocked": { title: "عرض خاص مكشوف ⚡", desc: "استخدم كود الخصم NEON50 للحصول على خصم 50% على لوحات المفاتيح الميكانيكية المحددة." },
+            "security alert": { title: "تنبيه أمني 🔒", desc: "تم تحديث إعدادات الأمان الخاصة بحسابك بنجاح." },
+            "flash sale alert!": { title: "تنبيه تخفيض خاطف! ⚡", desc: "سماعة SteelSeries Arctis Nova Pro الآن بخصم 30% للساعتين القادمتين. لا تفوت العرض!" },
+            "limited drop live!": { title: "إصدار محدود متوفر الآن! ⌨️", desc: "لوحة مفاتيح Razer BlackWidow V4 Pro Phantom Edition متوفرة الآن في المخزون. 200 قطعة فقط!" },
+            "monthly gear giveaway!": { title: "سحب الجوائز الشهري! 🎁", desc: "شارك في سحب NeonTech الشهري اليوم للفوز بنظارة واقع افتراضي حديثة مجانية. تُعلن النتائج يوم الجمعة!" },
+            "exclusive gamer discount!": { title: "خصم حصري للاعبين! 🔥", desc: "استخدم كود الخصم DOCK15 للحصول على خصم 15% على أي لوحة ماوس فاخرة أو إكسسوار قيمنق." },
+            "elite controller restocked!": { title: "إعادة توفر أداة التحكم الاحترافية! 🎮", desc: "أداة التحكم الاحترافية الخالية من عيوب الانجراف متوفرة الآن في المخزون. اطلبها قبل النفاد!" },
+            "pro setup guide published!": { title: "نشر دليل إعداد منصة الاحتراف! 💡", desc: "تعرف على كيفية ضبط معدل DPI للماوس وتردد الشاشة Hz للحصول على أفضل أداء تنافسي. اقرأ الدليل الآن!" }
+        };
+
         notifications.forEach(notif => {
             let item = document.createElement("div");
             item.className = `notif-item ${notif.unread ? "unread" : ""}`;
             item.setAttribute("data-id", notif.id);
+            
+            let displayTitle = notif.title;
+            let displayDesc = notif.desc;
+            
+            if (activeLang === "ar") {
+                const cleanTitle = notif.title.replace(/[^\w\s!?]/g, "").trim().toLowerCase();
+                if (notifMap[cleanTitle]) {
+                    displayTitle = notifMap[cleanTitle].title;
+                    displayDesc = notifMap[cleanTitle].desc;
+                } else {
+                    for (let key in notifMap) {
+                        if (notif.title.toLowerCase().includes(key)) {
+                            displayTitle = notifMap[key].title;
+                            displayDesc = notifMap[key].desc;
+                            break;
+                        }
+                    }
+                }
+            }
+
             item.innerHTML = `
                 <div class="notif-icon">${notif.icon}</div>
                 <div class="notif-content">
-                    <div class="notif-title">${notif.title}</div>
-                    <div class="notif-desc">${notif.desc}</div>
-                    <div class="notif-time">${notif.time}</div>
+                    <div class="notif-title">${displayTitle}</div>
+                    <div class="notif-desc">${displayDesc}</div>
+                    <div class="notif-time">${activeLang === "ar" ? "منذ قليل" : notif.time}</div>
                 </div>
             `;
             
@@ -1652,6 +1894,11 @@ function initNotificationsCenter() {
     ];
 
     function triggerIncomingNotification(forcedPoolIndex = null) {
+        // إذا تم عرض الإشعار بالفعل في هذه الجلسة، لا تعرض أي إشعارات تلقائية أخرى
+        if (sessionStorage.getItem('neontech_notif_shown')) {
+            return;
+        }
+
         // Pick a random notification from the pool or use specified index
         let poolIndex = forcedPoolIndex !== null ? forcedPoolIndex : Math.floor(Math.random() * notificationPool.length);
         let selectedItem = notificationPool[poolIndex];
@@ -1677,13 +1924,36 @@ function initNotificationsCenter() {
         }
         
         playNotificationSound();
-        showNeonToast(selectedItem.toastTitle, selectedItem.toastDesc, function() {
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        let displayToastTitle = selectedItem.toastTitle;
+        let displayToastDesc = selectedItem.toastDesc;
+        
+        if (activeLang === "ar") {
+            const notifMap = {
+                "flash sale alert!": { title: "تنبيه تخفيض خاطف! ⚡", desc: "سماعة SteelSeries Arctis Nova Pro بخصم 30%!" },
+                "limited drop live!": { title: "إصدار محدود متوفر الآن! ⌨️", desc: "لوحة مفاتيح رايزر بلاك ويدو فانتوم متوفرة الآن!" },
+                "monthly gear giveaway!": { title: "سحب الجوائز الشهري! 🎁", desc: "اربح نظارة واقع افتراضي مجانية!" },
+                "exclusive gamer discount!": { title: "خصم حصري للاعبين! 🔥", desc: "خصم 15% على إكسسوارات القيمنق!" },
+                "elite controller restocked!": { title: "أداة تحكم احترافية متوفرة! 🎮", desc: "أدوات التحكم الاحترافية عادت للمخزون!" },
+                "pro setup guide published!": { title: "دليل الاحتراف متوفر! 💡", desc: "اضبط الـ DPI ومعدل التحديث كالمحترفين!" }
+            };
+            const cleanTitle = selectedItem.title.replace(/[^\w\s!?]/g, "").trim().toLowerCase();
+            if (notifMap[cleanTitle]) {
+                displayToastTitle = notifMap[cleanTitle].title;
+                displayToastDesc = notifMap[cleanTitle].desc;
+            }
+        }
+        
+        showNeonToast(displayToastTitle, displayToastDesc, function() {
             dropdown.classList.add("open");
             document.body.classList.add("notif-open");
             notifications.forEach(n => n.unread = false);
             renderNotifications();
             updateBadge();
         });
+
+        // حفظ علامة تفيد بأنه تم عرض الإشعار بنجاح في الجلسة الحالية لمنع التكرار المزعج
+        sessionStorage.setItem('neontech_notif_shown', 'true');
     }
 
     // Trigger first demo notification after 15 seconds for instant user wow factor
@@ -1849,9 +2119,33 @@ function initCartSystem() {
         cart = [];
     }
 
+    // Expose these to window so that global functions like openInvoiceModal and sendWhatsAppOrder can access them!
+    window.cart = cart;
+    window.saveCart = saveCart;
+    window.renderCart = renderCart;
+    window.closeCartDrawer = closeCartDrawer;
+    window.setCart = setCart;
+
+    function setCart(newCart) {
+        cart = newCart;
+        window.cart = cart;
+        saveCart();
+        renderCart();
+    }
+
     function saveCart() {
         try {
             localStorage.setItem('neontech_cart', JSON.stringify(cart));
+            window.cart = cart; // Keep window.cart in sync
+            
+            // Sync with user-specific session cart in local storage
+            if (supabaseClient) {
+                supabaseClient.auth.getUser().then(({ data: { user } }) => {
+                    if (user) {
+                        localStorage.setItem(`sb-${user.id}-cart`, JSON.stringify(cart));
+                    }
+                });
+            }
         } catch (e) {
             console.warn("Error writing cart to localStorage:", e);
         }
@@ -1859,10 +2153,12 @@ function initCartSystem() {
 
     function openCartDrawer() {
         if (drawer) drawer.classList.add("open");
+        document.body.classList.add("cart-open");
     }
 
     function closeCartDrawer() {
         if (drawer) drawer.classList.remove("open");
+        document.body.classList.remove("cart-open");
     }
 
     function renderCart() {
@@ -1879,12 +2175,15 @@ function initCartSystem() {
             cartLink.setAttribute("aria-label", `Shopping cart, ${totalQty} items`);
         }
         
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        const t = translations[activeLang] || translations.en;
+
         if (cart.length === 0) {
             itemsContainer.innerHTML = `
                 <div class="cart-empty-state">
                     <span class="empty-icon">&#128722;</span>
-                    <p>Your cart is empty</p>
-                    <a href="#" class="btn-primary" id="cart-shop-now" style="text-align: center; text-decoration: none; display: inline-block; margin-top: 15px; padding: 10px 20px;">Shop Now</a>
+                    <p>${t.emptyCart}</p>
+                    <a href="#" class="btn-primary" id="cart-shop-now" style="text-align: center; text-decoration: none; display: inline-block; margin-top: 15px; padding: 10px 20px;">${t.shopNow}</a>
                 </div>
             `;
             if (subtotalEl) subtotalEl.textContent = "$0.00";
@@ -1917,9 +2216,9 @@ function initCartSystem() {
             itemDiv.className = "cart-item";
             itemDiv.setAttribute("data-id", item.id);
             itemDiv.innerHTML = `
-                <img src="${item.image}" alt="${item.title}" class="cart-item-img" />
+                <img src="${item.image}" alt="${getTranslatedProductTitle(item.title)}" class="cart-item-img" />
                 <div class="cart-item-info">
-                    <div class="cart-item-title">${item.title}</div>
+                    <div class="cart-item-title">${getTranslatedProductTitle(item.title)}</div>
                     ${metaText ? `<div class="cart-item-meta">${metaText}</div>` : ""}
                     <div class="cart-item-price">$${item.price.toFixed(2)}</div>
                     <div class="cart-item-actions" style="margin-top: 8px;">
@@ -1928,7 +2227,7 @@ function initCartSystem() {
                             <input type="text" class="cart-item-qty-input" value="${item.quantity}" readonly />
                             <button class="cart-item-qty-btn qty-inc">&plus;</button>
                         </div>
-                        <button class="cart-item-remove">Remove</button>
+                        <button class="cart-item-remove">${t.cartRemove || "Remove"}</button>
                     </div>
                 </div>
             `;
@@ -1953,7 +2252,12 @@ function initCartSystem() {
                     saveCart();
                     renderCart();
                 } else {
-                    showNeonToast("⚠️ Limit Reached", "Maximum of 10 items allowed per product.");
+                    const activeLang = localStorage.getItem("neontech_lang") || "en";
+                    if (activeLang === "ar") {
+                        showNeonToast("⚠️ الحد الأقصى للمنتج", "يُسمح بحد أقصى 10 قطع لكل منتج.");
+                    } else {
+                        showNeonToast("⚠️ Limit Reached", "Maximum of 10 items allowed per product.");
+                    }
                 }
             });
             
@@ -1991,10 +2295,12 @@ function initCartSystem() {
         let btn = e.target.closest(".btn-cart");
         if (btn) {
             e.preventDefault();
-            let card = btn.closest(".product-card");
-            if (card) {
-                addToCartFromCard(card);
-            }
+            requireAuth(() => {
+                let card = btn.closest(".product-card");
+                if (card) {
+                    addToCartFromCard(card);
+                }
+            });
         }
     });
 
@@ -2026,7 +2332,12 @@ function initCartSystem() {
         saveCart();
         renderCart();
         openCartDrawer();
-        showNeonToast("🛒 Added to Cart", `${title} has been added to your gear cart.`);
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        if (activeLang === "ar") {
+            showNeonToast("🛒 أُضيف إلى السلة", `تم إضافة <strong>${getTranslatedProductTitle(title)}</strong> إلى سلتك بنجاح!`);
+        } else {
+            showNeonToast("🛒 Added to Cart", `${title} has been added to your gear cart.`);
+        }
     }
 
     // Event delegation for options form submission (detail page)
@@ -2034,7 +2345,9 @@ function initCartSystem() {
         let form = e.target.closest(".p-options-form");
         if (form) {
             e.preventDefault();
-            addToCartFromForm(form);
+            requireAuth(() => {
+                addToCartFromForm(form);
+            });
         }
     });
 
@@ -2044,7 +2357,9 @@ function initCartSystem() {
             let form = btn.closest("form");
             if (!form) {
                 e.preventDefault();
-                addToCartFromForm(null);
+                requireAuth(() => {
+                    addToCartFromForm(null);
+                });
             }
         }
     });
@@ -2118,19 +2433,45 @@ function initCartSystem() {
         }
         
         saveCart();
-        renderCart();
-        openCartDrawer();
-        showNeonToast("🛒 Added to Cart", `${qty}x ${title} added to your gear cart.`);
+        
+        let cartBadge = document.querySelector(".cart-badge");
+        let cartBtn = cartBadge ? cartBadge.parentElement : null;
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        if (imgEl && cartBadge && cartBtn) {
+            let successMessage = activeLang === "ar"
+                ? `🔥 تم إضافة (${qty}) قطع من ${getTranslatedProductTitle(title)} إلى سلتك بنجاح!`
+                : `🔥 Added (${qty}) pieces of ${title} to your cart!`;
+            animateFly(imgEl, cartBtn, cartBadge, qty, successMessage);
+            setTimeout(() => {
+                renderCart();
+                openCartDrawer();
+            }, 950);
+        } else {
+            renderCart();
+            openCartDrawer();
+            if (activeLang === "ar") {
+                showNeonToast("🛒 أُضيف إلى السلة", `تم إضافة ${qty}x ${getTranslatedProductTitle(title)} إلى سلتك بنجاح!`);
+            } else {
+                showNeonToast("🛒 Added to Cart", `${qty}x ${title} added to your gear cart.`);
+            }
+        }
     }
 
     // WhatsApp Checkout — إتمام الشراء عبر الواتساب
     if (checkoutBtn) {
         checkoutBtn.addEventListener("click", function() {
-            if (cart.length === 0) {
-                showNeonToast("⚠️ Empty Cart", "Please add items to your cart before checking out.");
-                return;
-            }
-            openInvoiceModal();
+            requireAuth(() => {
+                if (cart.length === 0) {
+                    const activeLang = localStorage.getItem("neontech_lang") || "en";
+                    if (activeLang === "ar") {
+                        showNeonToast("⚠️ السلة فارغة", "يرجى إضافة منتجات إلى السلة قبل إتمام الشراء.");
+                    } else {
+                        showNeonToast("⚠️ Empty Cart", "Please add items to your cart before checking out.");
+                    }
+                    return;
+                }
+                openInvoiceModal();
+            });
         });
     }
 
@@ -2228,12 +2569,14 @@ function createProductCardHTML(product) {
     const rating = (4.0 + (product.id * 7 % 11) / 10).toFixed(1);
     const ratingCount = Math.floor(100 + (product.id * 149 % 4800));
     const starsHTML = renderStarsHTML(parseFloat(rating));
+    const initialViewers = Math.floor(Math.random() * (12 - 3 + 1)) + 3;
     
     let badgeHTML = '';
+    const activeLang = localStorage.getItem("neontech_lang") || "en";
     if (product.id % 4 === 1) {
-        badgeHTML = '<span class="card-badge badge-new">New</span>';
+        badgeHTML = `<span class="card-badge badge-new">${activeLang === "ar" ? "جديد" : "New"}</span>`;
     } else if (product.id % 4 === 2) {
-        badgeHTML = '<span class="card-badge badge-hot">Hot</span>';
+        badgeHTML = `<span class="card-badge badge-hot">🔥 ${activeLang === "ar" ? "شائع" : "Hot"}</span>`;
     } else if (product.id % 4 === 3) {
         badgeHTML = '<span class="card-badge badge-sale">-20%</span>';
     }
@@ -2249,6 +2592,39 @@ function createProductCardHTML(product) {
         pricingHTML = `
             <span class="price-current">$${product.price.toFixed(2)}</span>
         `;
+    }
+
+    let transCategory = product.category;
+    let transTitle = product.title;
+    let transCartText = "Add to Cart";
+    let transViewersText = `Live: <span class="viewers-count">${initialViewers}</span> Gamers`;
+
+    if (activeLang === "ar") {
+        const catKey = product.category.toLowerCase().trim();
+        if (catKey === "controllers") transCategory = "أجهزة التحكم";
+        else if (catKey === "monitors") transCategory = "الشاشات";
+        else if (catKey === "headsets") transCategory = "سماعات الرأس";
+        else if (catKey === "keyboards") transCategory = "لوحات المفاتيح";
+        else if (catKey === "mice") transCategory = "الماوسات";
+        else if (catKey === "laptops") transCategory = "لاب توب";
+        else if (catKey === "graphics cards") transCategory = "كروت الشاشة";
+        else if (catKey === "vr headsets") transCategory = "نظارات الواقع الافتراضي";
+        else if (catKey === "gaming chairs") transCategory = "كراسي القيمنق";
+
+        const titleLower = product.title.toLowerCase().trim();
+        if (titleLower.includes("apex pro")) transTitle = "لوحة مفاتيح ستيل سيريز ايبكس برو";
+        else if (titleLower.includes("g915")) transTitle = "لوحة مفاتيح لوجيتك G915 اللاسلكية";
+        else if (titleLower.includes("titan evo")) transTitle = "كرسي الألعاب سيكريت لاب تايتان إيفو";
+        else if (titleLower.includes("stellar shift")) transTitle = "جهاز تحكم إكس بوكس ستيلر شيفت";
+        else if (titleLower.includes("rtx 5090")) transTitle = "كارت شاشة أسوس روج RTX 5090";
+        else if (titleLower.includes("arctis nova")) transTitle = "سماعة ستيل سيريز نوفا برو اللاسلكية";
+        else if (titleLower.includes("blade 16")) transTitle = "لاب توب رايزر بليد 16 للألعاب";
+        else if (titleLower.includes("odyssey oled")) transTitle = "شاشة سامسونج أوديسي OLED G9 منحنية";
+        else if (titleLower.includes("superlight 2")) transTitle = "ماوس لوجيتك جي برو سوبرلايت 2";
+        else if (titleLower.includes("quest 3")) transTitle = "نظارة الواقع الافتراضي ميتا كويست 3";
+
+        transCartText = "إضافة للسلة";
+        transViewersText = `مباشر: <span class="viewers-count">${initialViewers}</span> لاعبين يتصفحون الآن`;
     }
 
     return `
@@ -2271,21 +2647,21 @@ function createProductCardHTML(product) {
             <a href="${link}"><img src="${product.image}" alt="${product.title}"></a>
           </div>
           <div class="card-body">
-            <div class="card-category" style="text-transform: capitalize;">${product.category}</div>
-            <h3 class="card-title"><a href="${link}">${product.title}</a></h3>
+            <div class="card-category" style="text-transform: capitalize;">${transCategory}</div>
+            <h3 class="card-title"><a href="${link}">${transTitle}</a></h3>
             <div class="card-rating">
               <div class="stars" aria-label="${rating} out of 5 stars">
                 ${starsHTML}
               </div>
               <span class="rating-count">(${ratingCount})</span>
             </div>
-            <p class="viewers-text">Live: <span class="viewers-count">5</span> Gamers</p>
+            <p class="viewers-text">${transViewersText}</p>
           </div>
           <div class="card-footer">
             <div class="card-pricing">
               ${pricingHTML}
             </div>
-            <button class="btn-cart"><span>Add to Cart</span></button>
+            <button class="btn-cart"><span>${transCartText}</span></button>
           </div>
         </article>
     `;
@@ -2359,7 +2735,7 @@ function initAuth() {
     const authModal = document.getElementById("auth-modal");
     if (!authModal) return;
 
-    const authBtn = document.getElementById("user-account-btn");
+    const authBtn = document.getElementById("user-account-btn") || document.querySelector('a[aria-label="User account"]');
     const closeBtn = document.getElementById("auth-modal-close");
     const loginForm = document.getElementById("login-form");
     const signupForm = document.getElementById("signup-form");
@@ -2450,9 +2826,15 @@ function initAuth() {
                 navUserName.textContent = name;
                 navUserName.style.display = "inline";
             }
+            if (typeof window.syncUserCart === 'function') {
+                window.syncUserCart(user);
+            }
         } else {
             loginForm.style.display = "block";
             if (navUserName) navUserName.style.display = "none";
+            if (typeof window.syncUserCart === 'function') {
+                window.syncUserCart(null);
+            }
         }
     }
 
@@ -2846,7 +3228,12 @@ function initRGBCustomizer() {
             localStorage.setItem("neontech-rgb-theme", selectedTheme);
             applyThemeClass(selectedTheme);
             
-            showNeonToast("🎮 RGB Profile Synced", `Atmosphere shifted to ${btn.innerText.trim()}.`);
+            const activeLang = localStorage.getItem("neontech_lang") || "en";
+            if (activeLang === "ar") {
+                showNeonToast("🎮 تزامن نمط RGB", `تم تحويل جو الغرفة إلى ${btn.innerText.trim()}.`);
+            } else {
+                showNeonToast("🎮 RGB Profile Synced", `Atmosphere shifted to ${btn.innerText.trim()}.`);
+            }
         });
     });
     
@@ -2881,10 +3268,19 @@ function initRGBCustomizer() {
             localStorage.setItem("neontech_theme", selectedMode);
             applyThemeMode(selectedMode);
             
+            const activeLang = localStorage.getItem("neontech_lang") || "en";
             if (selectedMode === "light") {
-                showNeonToast("☀️ Light Mode Activated", "Atmosphere shifted to a bright workspace.");
+                if (activeLang === "ar") {
+                    showNeonToast("☀️ تفعيل الوضع المضيء", "تم تحويل جو المنصة إلى وضع العمل المضيء.");
+                } else {
+                    showNeonToast("☀️ Light Mode Activated", "Atmosphere shifted to a bright workspace.");
+                }
             } else {
-                showNeonToast("🌙 Dark Mode Activated", "Atmosphere shifted to deep stealth mode.");
+                if (activeLang === "ar") {
+                    showNeonToast("🌙 تفعيل الوضع المظلم", "تم تحويل جو المنصة إلى وضع التخفي المظلم.");
+                } else {
+                    showNeonToast("🌙 Dark Mode Activated", "Atmosphere shifted to deep stealth mode.");
+                }
             }
         });
     });
@@ -3056,7 +3452,8 @@ function openInvoiceModal() {
     itemsTbody.innerHTML = "";
     
     let subtotal = 0;
-    cart.forEach(item => {
+    const currentCart = window.cart || [];
+    currentCart.forEach(item => {
         const itemTotal = item.price * item.quantity;
         subtotal += itemTotal;
         
@@ -3064,7 +3461,7 @@ function openInvoiceModal() {
         row.innerHTML = `
             <td>
                 <div class="invoice-item-title">${item.title}</div>
-                <div class="invoice-item-option">${item.options ? item.options : 'Standard Edition'}</div>
+                <div class="invoice-item-option">${item.options ? (typeof item.options === 'string' ? item.options : Object.values(item.options).join(' | ')) : 'Standard Edition'}</div>
             </td>
             <td style="text-align: center;">${item.quantity}</td>
             <td style="text-align: right;">$${item.price.toFixed(2)}</td>
@@ -3114,8 +3511,9 @@ function applyPromoCode() {
     const promoInput = modal.querySelector("#invoice-promo-input").value.trim().toUpperCase();
     const promoStatus = modal.querySelector("#invoice-promo-status");
     
+    const activeLang = localStorage.getItem("neontech_lang") || "en";
     if (promoInput === "") {
-        promoStatus.textContent = "Please enter a code.";
+        promoStatus.textContent = activeLang === "ar" ? "يرجى إدخال الكود." : "Please enter a code.";
         promoStatus.className = "error";
         return;
     }
@@ -3123,18 +3521,23 @@ function applyPromoCode() {
     if (promoInput === "SALAH10") {
         activeDiscountPercent = 10;
         appliedPromoCode = "SALAH10";
-        promoStatus.textContent = "🎉 Code applied! 10% discount deducted.";
+        promoStatus.textContent = activeLang === "ar" ? "🎉 تم تطبيق الكود! خصم 10% مقتطع." : "🎉 Code applied! 10% discount deducted.";
         promoStatus.className = "success";
         
         let subtotal = 0;
-        cart.forEach(item => {
+        const currentCart = window.cart || [];
+        currentCart.forEach(item => {
             subtotal += item.price * item.quantity;
         });
         updateInvoiceTotals(subtotal);
         
-        showNeonToast("🎟️ Coupon Activated", "10% off has been applied to your invoice.");
+        if (activeLang === "ar") {
+            showNeonToast("🎟️ تم تفعيل كود الخصم", "تم تطبيق خصم 10% على فاتورتك بنجاح.");
+        } else {
+            showNeonToast("🎟️ Coupon Activated", "10% off has been applied to your invoice.");
+        }
     } else {
-        promoStatus.textContent = "❌ Invalid code. Try SALAH10!";
+        promoStatus.textContent = activeLang === "ar" ? "❌ كود غير صحيح. جرب SALAH10!" : "❌ Invalid code. Try SALAH10!";
         promoStatus.className = "error";
     }
 }
@@ -3149,9 +3552,11 @@ function sendWhatsAppOrder() {
     const grandTotalText = modal.querySelector("#invoice-grand-total").textContent;
     
     let itemLines = "";
-    cart.forEach(item => {
+    const currentCart = window.cart || [];
+    currentCart.forEach(item => {
         const itemTotal = item.price * item.quantity;
-        itemLines += `🎮 ${item.title} (${item.options ? item.options : 'Standard'})\n`;
+        const optionText = item.options ? (typeof item.options === 'string' ? item.options : Object.values(item.options).join(' | ')) : 'Standard';
+        itemLines += `🎮 ${item.title} (${optionText})\n`;
         itemLines += `   Qty: ${item.quantity} x $${item.price.toFixed(2)} = $${itemTotal.toFixed(2)}\n`;
     });
     
@@ -3182,10 +3587,21 @@ function sendWhatsAppOrder() {
     setTimeout(() => {
         window.open(whatsappUrl, "_blank");
         
-        cart = [];
-        saveCart();
-        renderCart();
-        closeCartDrawer();
+        // مسح وتحديث سلة المشتريات بعد نجاح الطلب
+        if (typeof window.saveCart === "function") {
+            window.cart = [];
+            // تحديث المتغير المحلي داخل دالة السلة عبر المزامنة
+            const itemsContainer = document.getElementById("cart-items-container");
+            // نظراً لأن saveCart() و renderCart() تعتمدان على closure المتغير المحلي cart،
+            // سنقوم بإفراغ مصفوفة window.cart وسنقوم أيضاً بإعادة استدعاء دالة تحديث السلة.
+            // الأفضل هو إفراغ المصفوفة الأصلية أيضاً:
+            if (window.cart) {
+                window.cart.length = 0; 
+            }
+            window.saveCart();
+            window.renderCart();
+            window.closeCartDrawer();
+        }
         
         modal.classList.remove("open");
         
@@ -3193,6 +3609,2161 @@ function sendWhatsAppOrder() {
         whatsappBtn.innerHTML = originalText;
         
         playNotificationSound();
-        showNeonToast("📱 Order Dispatched", "Your checkout sheet is opened in WhatsApp!");
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        if (activeLang === "ar") {
+            showNeonToast("📱 إرسال الطلب", "تم فتح تفاصيل الشراء وإعداد الفاتورة في واتساب!");
+        } else {
+            showNeonToast("📱 Order Dispatched", "Your checkout sheet is opened in WhatsApp!");
+        }
     }, 1200);
 }
+
+/* ── Premium Advanced Features Integration (Bilingual, Reviews, Cart Sync, Chatbot) ── */
+
+const productTitlesMap = {
+    // Keyboards
+    "razer blackwidow v4 pro": "لوحة مفاتيح رايزر بلاك ويدو V4 برو",
+    "razer blackwidow v4 pro — phantom edition": "لوحة مفاتيح رايزر بلاك ويدو V4 برو — إصدار الفانتوم",
+    "razer blackwidow v4 pro - phantom edition": "لوحة مفاتيح رايزر بلاك ويدو V4 برو — إصدار الفانتوم",
+    "logitech g915 tkl lightspeed": "لوحة مفاتيح لوجيتك G915 TKL لايت سبيد اللاسلكية",
+    "steelseries apex pro tkl": "لوحة مفاتيح ستيل سيريز أبيكس برو TKL ميكانيكية",
+    "steelseries apex pro tkl keyboard": "لوحة مفاتيح ستيل سيريز أبيكس برو TKL ميكانيكية",
+    "corsair k70 rgb pro mechanical": "لوحة مفاتيح كورسير K70 RGB برو الميكانيكية",
+    "corsair k70 rgb pro keyboard": "لوحة مفاتيح كورسير K70 RGB برو الميكانيكية",
+    "keychron q1 qmk custom keyboard": "لوحة مفاتيح كيتشرون Q1 QMK المخصصة",
+    "hyperx alloy origins core": "لوحة مفاتيح هايبر إكس ألوي أوريجينز كور",
+    "ducky one 3 sf rgb mechanical": "لوحة مفاتيح دكي ون 3 SF RGB ميكانيكية",
+    "asus rog strix scope ii 96": "لوحة مفاتيح أسوس روج ستريكس سكوب II 96",
+    "wooting 60he hall effect keyboard": "لوحة مفاتيح ووتينغ 60HE هول إفكت المغناطيسية",
+    "fnatic streak65 ultra-compact rgb": "لوحة مفاتيح فناتيك ستريك 65 الترا المدمجة",
+    "razer huntsman v3 pro keyboard": "لوحة مفاتيح رايزر هانتسمان V3 برو",
+    "razer huntsman v3 pro tkl": "لوحة مفاتيح رايزر هانتسمان V3 برو TKL",
+
+    // Mice
+    "logitech g pro x superlight 2": "ماوس لوجيتك جي برو إكس سوبرلايت 2 ديكس اللاسلكي",
+    "razer deathadder v3 pro wireless": "ماوس رايزر ديف أدر V3 برو اللاسلكي",
+    "razer deathadder v3 hyperspeed": "ماوس رايزر ديف أدر V3 هايبر سبيد اللاسلكي",
+    "steelseries aerox 3 wireless": "ماوس ستيل سيريز أيروكس 3 اللاسلكي",
+    "corsair dark core rgb pro wireless": "ماوس كورسير دارك كور RGB برو اللاسلكي",
+    "corsair dark core rgb pro mouse": "ماوس كورسير دارك كور RGB برو اللاسلكي",
+    "glorious model o 2 wireless": "ماوس غلوريوس موديل O 2 اللاسلكي",
+    "logitech g502 x plus lightspeed": "ماوس لوجيتك G502 X بلس لايت سبيد اللاسلكي",
+    "logitech g502 x plus wireless": "ماوس لوجيتك G502 X بلس لايت سبيد اللاسلكي",
+    "razer basilisk v3 pro wireless": "ماوس رايزر بازيليسك V3 برو اللاسلكي",
+    "pulsar x2 wireless gaming mouse": "ماوس بولسار X2 اللاسلكي الاحترافي",
+    "finalmouse ultralightx wireless": "ماوس فاينال ماوس ألترا لايت X الخفيف للغاية",
+    "asus rog harpe ace aim lab edition": "ماوس أسوس روج هاربي إس إيم لابد اللاسلكي",
+
+    // Headsets
+    "steelseries arctis nova pro wireless": "سماعة ستيل سيريز أركتيس نوفا برو اللاسلكية",
+    "razer blackshark v2 pro wireless": "سماعة رايزر بلاك شارك V2 برو اللاسلكية",
+    "logitech g pro x 2 lightspeed wireless": "سماعة لوجيتك جي برو إكس 2 اللاسلكية الاحترافية",
+    "logitech g pro x 2 wireless": "سماعة لوجيتك جي برو إكس 2 اللاسلكية الاحترافية",
+    "corsair virtuoso rgb wireless xt": "سماعة كورسير فيرتوزو RGB اللاسلكية XT الفاخرة",
+    "hyperx cloud iii wireless gaming": "سماعة هايبر إكس كلاود III اللاسلكية للألعاب",
+    "astro a50 wireless gen 4 + base": "سماعة أسترو A50 اللاسلكية الجيل الرابع مع القاعدة",
+    "epos h6pro closed acoustic headset": "سماعة إيبوس H6PRO الاحترافية المغلقة",
+    "beyerdynamic mmx 300 pro headset": "سماعة بيردايناميك MMX 300 برو الاحترافية",
+    "sennheiser game zero gaming headset": "سماعة سنهايزر جيم زيرو الاحترافية للألعاب",
+    "jbl quantum one wired usb headset": "سماعة جي بي إل كوانتوم ون السلكية الاحترافية USB",
+
+    // Monitors
+    "asus rog swift pg27aqn 27\" 360hz": "شاشة أسوس روج ستريكس سويفت PG27AQN قياس 27 بوصة 360 هرتز",
+    "msi meg 342c qd-oled 34\" ultrawide": "شاشة إم إس آي ميج 342C QD-OLED قياس 34 بوصة عريضة",
+    "corsair xeneon 27qhd240 oled 27\"": "شاشة كورسير زينون OLED قياس 27 بوصة 240 هرتز",
+    "samsung odyssey g9 49\" dqhd curved": "شاشة سامسونج أوديسي OLED G9 منحنية قياس 49 بوصة",
+    "samsung odyssey oled g9": "شاشة سامسونج أوديسي OLED G9 منحنية قياس 49 بوصة",
+    "lg ultragear 27gr95qe 27\" oled": "شاشة إل جي ألترا جير 27 بوصة OLED بدقة عالية",
+    "benq zowie xl2546x 24.5\" 240hz": "شاشة بينكيو زوي XL2546X قياس 24.5 بوصة 240 هرتز",
+    "alienware aw3225qf 32\" qd-oled 4k": "شاشة إيلين وير AW3225QF قياس 32 بوصة QD-OLED 4K",
+    "acer predator x28 28\" 4k 155hz": "شاشة أسير بريداتور X28 قياس 28 بوصة 4K 155 هرتز",
+    "gigabyte m27q x 27\" 240hz ips": "شاشة جيجابايت M27Q X قياس 27 بوصة 240 هرتز IPS",
+    "viewsonic xg2431 24\" 240hz ips": "شاشة فيوسونيك XG2431 قياس 24 بوصة 240 هرتز IPS",
+
+    // Controllers
+    "xbox elite wireless controller series 2": "يد تحكم إكس بوكس إيليت اللاسلكية الإصدار الثاني",
+    "steelseries stratus duo": "يد تحكم ستيل سيريز ستراتوس ديو اللاسلكية",
+    "steelseries stratus duo wireless": "يد تحكم ستيل سيريز ستراتوس ديو اللاسلكية",
+    "logitech f710 wireless gamepad": "يد تحكم لوجيتك F710 اللاسلكية للكمبيوتر",
+    "logitech g f710 wireless controller": "يد تحكم لوجيتك F710 اللاسلكية للكمبيوتر",
+    "sony dualsense edge wireless ps5": "يد تحكم سوني دبل سينس إيدج اللاسلكية للبلايستيشن 5",
+    "razer wolverine v2 chroma xbox": "يد تحكم رايزر ولفيرين V2 كروما إكس بوكس",
+    "8bitdo ultimate bluetooth controller": "يد تحكم 8 بت دو ألتيميت اللاسلكية مع بلوتوث",
+    "scuf instinct pro xbox controller": "يد تحكم سكوف إنستينكت برو المخصصة للإكس بوكس",
+    "nacon revolution 5 pro ps5/pc": "يد تحكم ناكون ريفولوشن 5 برو للبلايستيشن 5 والكمبيوتر",
+    "turtle beach stealth ultra xbox": "يد تحكم تيرتل بيتش ستيلث الترا اللاسلكية للإكس بوكس",
+    "powera spectra infinity enhanced": "يد تحكم باور إيه سبيكترا إنفينيتي السلكية المحسنة",
+
+    // Gaming Chairs
+    "secretlab titan evo 2026 series": "كرسي سيكريت لاب تايتان إيفو 2026 المريح",
+    "secretlab titan evo 2026": "كرسي سيكريت لاب تايتان إيفو 2026 المريح",
+    "razer iskur v2 ergonomic gaming chair": "كرسي الألعاب رايزر إيسكور V2 المريح",
+    "razer iskur v2 gaming chair": "كرسي الألعاب رايزر إيسكور V2 المريح",
+    "corsair tc200 leatherette gaming chair": "كرسي ألعاب كورسير TC200 من الجلد الفاخر",
+    "herman miller x logitech embody": "كرسي هيرمان ميلر × لوجيتك إمبودي الصحي الفاخر",
+    "noblechairs hero st gaming chair": "كرسي ألعاب نوبل تشيرز هيرو ST الفخم",
+    "andaseat kaiser 3 xl ergonomic": "كرسي ألعاب أندا سيت قيصر 3 XL المريح للغاية",
+    "dxracer craft pro classic gaming": "كرسي ألعاب دي إكس ريسر كرافت برو الكلاسيكي",
+    "cougar armor titan pro royal": "كرسي ألعاب كوجار أرمور تايتان برو رويال الملكي",
+    "akracing masters series pro luxury": "كرسي ألعاب إيه كي ريسينغ ماسترز برو الفاخر",
+    "vertagear sl5800 hygennx edition": "كرسي ألعاب فيرتا جير SL5800 هيدجيم إكس الطبي",
+
+    // Laptops
+    "asus rog strix scar 18 rtx 4090": "لاب توب أسوس روج ستريكس سكار 18 مع كارت RTX 4090",
+    "msi titan 18 hx i9 rtx 4090": "لاب توب إم إس آي تايتان 18 HX مع معالج i9 وكارت RTX 4090",
+    "razer blade 16 rtx 4080 qhd+ 240hz": "لاب توب رايزر بليد 16 مع كارت RTX 4080 وشاشة 240 هرتز",
+    "razer blade 16 rtx 5090": "لاب توب رايزر بليد 16 مع كارت RTX 5090 الخارق",
+    "alienware m18 r2 i9 rtx 4090": "لاب توب إيلين وير m18 R2 مع معالج i9 وكارت RTX 4090",
+    "lenovo legion pro 7i 16\" rtx 4080": "لاب توب لينوفو ليجن برو 7i قياس 16 بوصة مع كارت RTX 4080",
+    "acer predator helios 18 rtx 4080": "لاب توب أسير بريداتور هليوس 18 مع كارت RTX 4080",
+    "hp omen 17 i9 rtx 4070 ti 240hz": "لاب توب إتش بي أومين 17 مع معالج i9 وكارت RTX 4070 Ti",
+    "gigabyte aorus 17x rtx 4090 uhd+": "لاب توب جيجابايت أوروس 17X مع كارت RTX 4090 وشاشة UHD+",
+    "asus rog zephyrus g16 rtx 4070": "لاب توب أسوس روج زيفيروس G16 مع كارت RTX 4070",
+    "msi raider ge78 hx 16\" rtx 4080": "لاب توب إم إس آي ريدر GE78 HX قياس 16 بوصة مع كارت RTX 4080",
+    
+    // VR Headsets
+    "meta quest 3 512gb": "نظارة الواقع الافتراضي ميتا كويست 3 مساحة 512 جيجا",
+    
+    // Graphics cards
+    "asus rog strix geforce rtx 5090": "كارت الشاشة أسوس روج ستريكس جيفورس RTX 5090",
+    
+    // Additional missing product titles for catalog cards and detail pages
+    "razer wolverine v3 pro wireless": "يد تحكم رايزر ولفيرين V3 برو اللاسلكية",
+    "razer wolverine v3 pro": "يد تحكم رايزر ولفيرين V3 برو اللاسلكية",
+    "asus rog swift 360hz oled 27\"": "شاشة أسوس روج سويفت 360 هرتز OLED قياس 27 بوصة",
+    "msi optix mpg341qr 34\" ultrawide": "شاشة إم إس آي أوبتكس MPG341QR قياس 34 بوصة عريضة",
+    "razer blade 16 rtx 5090 ultra": "لاب توب رايزر بليد 16 مع كارت RTX 5090 ألترا الخارق",
+    "asus rog zephyrus g14 laptop": "لاب توب أسوس روج زيفيروس G14 للألعاب",
+    "nvidia geforce rtx 5090 fe": "كارت الشاشة إنفيديا جيفورس RTX 5090 إصدار المؤسسين (FE)",
+    "asus rog matrix rtx 4090": "كارت الشاشة أسوس روج ماتريكس RTX 4090",
+    "meta quest 3 pro vr headset": "نظارة الواقع الافتراضي ميتا كويست 3 برو المتطورة",
+    "htc vive pro 2 system": "نظام نظارة الواقع الافتراضي إتش تي سي فايف برو 2 المتكامل",
+    "corsair xeneon flex oled 45\"": "شاشة كورسير زينون فليكس القابلة للانحناء OLED قياس 45 بوصة"
+};
+
+function getTranslatedProductTitle(title) {
+    const activeLang = localStorage.getItem("neontech_lang") || "en";
+    if (activeLang !== "ar") return title;
+    
+    const lower = title.toLowerCase().replace(/\s+/g, " ").trim();
+    if (productTitlesMap[lower]) return productTitlesMap[lower];
+    
+    for (let key in productTitlesMap) {
+        if (lower.includes(key)) {
+            return productTitlesMap[key];
+        }
+    }
+    return title;
+}
+
+// 1. Translations Dictionary Map for Bilingual (En/Ar) Layout
+const translations = {
+    en: {
+        searchPlaceholder: "Search products, brands…",
+        categoriesTitle: "Categories",
+        allProducts: "All Products",
+        controllers: "Controllers",
+        monitors: "Monitors",
+        headsets: "Headsets",
+        keyboards: "Keyboards",
+        mice: "Mice",
+        laptops: "Laptops",
+        graphicsCards: "Graphics Cards",
+        vrHeadsets: "VR Headsets",
+        gamingChairs: "Gaming Chairs",
+        brandsTitle: "Brands",
+        ratingTitle: "Minimum Rating",
+        priceRangeTitle: "Price Range",
+        sortBy: "Sort By:",
+        featured: "Featured",
+        priceLowHigh: "Price: Low to High",
+        priceHighLow: "Price: High to Low",
+        topRated: "Top Rated",
+        newest: "Newest",
+        writeReview: "Write a Review",
+        submitReview: "Submit Review",
+        yourRating: "Your Rating:",
+        reviewPlaceholder: "Share your experience with this gaming gear...",
+        reviewTitlePlaceholder: "Review Title (e.g., Ultimate performance!)",
+        reviewerNamePlaceholder: "Your Name",
+        addToCart: "Add to Cart",
+        buyNow: "Proceed to Checkout",
+        qtyLabel: "Quantity:",
+        specsTab: "Specifications",
+        reviewsTab: "Reviews",
+        descTab: "Description",
+        exitTitle: "🔥 WAIT, DON'T LEAK THE LOOT!",
+        exitDesc: "Salah got you an exclusive 10% discount on all elite gear. Use code:",
+        exitClose: "No thanks, I pay full price",
+        exitGet: "Claim Loot",
+        invoiceTitle: "RETAIL INVOICE",
+        invoiceBilledTo: "Billed To:",
+        invoiceSeller: "Seller Details:",
+        invoiceSellerName: "NeonTech Gaming Store",
+        invoiceOwner: "Salah Khaled — Owner",
+        invoicePromoLabel: "Enter Promo Code:",
+        invoicePromoBtn: "Apply",
+        invoiceSubtotal: "Subtotal:",
+        invoiceTax: "VAT (15%):",
+        invoiceShipping: "Shipping:",
+        invoiceShippingFree: "FREE",
+        invoiceGrandTotal: "Grand Total:",
+        invoiceClose: "Close",
+        invoicePrint: "Print Receipt",
+        invoiceWhatsApp: "Send on WhatsApp",
+        liveViewers: "Live: {count} Gamers",
+        emptyCart: "Your cart is empty",
+        shopNow: "Shop Now",
+        cartTitle: "Your Cart",
+        cartRemove: "Remove",
+        limitReached: "Maximum of 10 items allowed per product."
+    },
+    ar: {
+        searchPlaceholder: "ابحث عن الأجهزة، الماركات...",
+        categoriesTitle: "الأقسام",
+        allProducts: "كل المنتجات",
+        controllers: "أجهزة التحكم",
+        monitors: "الشاشات",
+        headsets: "سماعات الرأس",
+        keyboards: "لوحات المفاتيح",
+        mice: "الماوسات",
+        laptops: "لاب توب",
+        graphicsCards: "كروت الشاشة",
+        vrHeadsets: "نظارات الواقع الافتراضي",
+        gamingChairs: "كراسي القيمنق",
+        brandsTitle: "الماركات",
+        ratingTitle: "الحد الأدنى للتقييم",
+        priceRangeTitle: "نطاق السعر",
+        sortBy: "ترتيب حسب:",
+        featured: "المميز",
+        priceLowHigh: "السعر: من الأقل للأعلى",
+        priceHighLow: "السعر: من الأعلى للأقل",
+        topRated: "الأعلى تقييماً",
+        newest: "الأحدث",
+        writeReview: "اكتب تقييمًا",
+        submitReview: "إرسال التقييم",
+        yourRating: "تقييمك بالنجوم:",
+        reviewPlaceholder: "شاركنا تجربتك للأداة الجيمنج...",
+        reviewTitlePlaceholder: "عنوان المراجعة (مثال: أداء جبار!)",
+        reviewerNamePlaceholder: "اسمك الكريم",
+        addToCart: "إضافة للسلة",
+        buyNow: "إتمام الشراء",
+        qtyLabel: "الكمية:",
+        specsTab: "المواصفات",
+        reviewsTab: "المراجعات",
+        descTab: "الوصف",
+        exitTitle: "🔥 استنى يا بطل! متضيعش الجيم!",
+        exitDesc: "صلا مروق عليك بخصم 10% إضافي على كل الأدوات والعتاد. استخدم الكود:",
+        exitClose: "لا شكرًا، حابب أشتري بالسعر الكامل",
+        exitGet: "احصل على الخصم",
+        invoiceTitle: "فاتورة مبيعات",
+        invoiceBilledTo: "فاتورة إلى:",
+        invoiceSeller: "بيانات البائع:",
+        invoiceSellerName: "متجر نيون تك للجيمنج",
+        invoiceOwner: "صلاح خالد — المالك",
+        invoicePromoLabel: "أدخل كود الخصم:",
+        invoicePromoBtn: "تطبيق",
+        invoiceSubtotal: "المجموع الفرعي:",
+        invoiceTax: "ضريبة القيمة المضافة (15%):",
+        invoiceShipping: "الشحن:",
+        invoiceShippingFree: "مجاني",
+        invoiceGrandTotal: "المجموع الكلي:",
+        invoiceClose: "إغلاق",
+        invoicePrint: "طباعة الفاتورة",
+        invoiceWhatsApp: "أرسل عبر الواتساب",
+        liveViewers: "مباشر: {count} لاعبين يتصفحون الآن",
+        emptyCart: "سلة المشتريات فارغة",
+        shopNow: "تصفح المتجر",
+        cartTitle: "سلتك",
+        cartRemove: "حذف",
+        limitReached: "الحد الأقصى هو 10 قطع لكل منتج."
+    }
+};
+
+// 2. Global Translation Engine
+const staticPhrases = {
+    // Specs keys
+    "connectivity": "الاتصال",
+    "switches": "المفاتيح",
+    "actuation distance": "مسافة التشغيل",
+    "actuation force": "قوة الضغط",
+    "battery life": "عمر البطارية",
+    "materials": "المواد",
+    "dimensions": "الأبعاد",
+    "weight": "الوزن",
+    "warranty": "الضمان",
+    "sensor": "المستشعر",
+    "resolution": "الدقة",
+    "ips": "السرعة (IPS)",
+    "acceleration": "التسارع",
+    "polling rate": "معدل الاستطلاع",
+    "panel type": "نوع اللوحة",
+    "aspect ratio": "نسبة العرض",
+    "refresh rate": "معدل التحديث",
+    "response time": "زمن الاستجابة",
+    "brightness": "السطوع",
+    "contrast ratio": "نسبة التباين",
+    "color gamut": "تدرج الألوان",
+    "audio drivers": "مشغلات الصوت",
+    "frequency response": "استجابة التردد",
+    "impedance": "المقاومة",
+    "microphone": "الميكروفون",
+    "gpu architecture": "معمارية معالج الرسوميات",
+    "cuda cores": "نواة كودا (CUDA Cores)",
+    "boost clock": "سرعة المعالج القصوى",
+    "memory size": "حجم الذاكرة",
+    "memory type": "نوع الذاكرة",
+    "memory bus": "ناقل الذاكرة",
+    "power requirements": "متطلبات الطاقة",
+    "cpu": "المعالج",
+    "ram": "الذاكرة العشوائية (RAM)",
+    "storage": "التخزين",
+    "operating system": "نظام التشغيل",
+    "tracking": "التتبع",
+    "ipd range": "نطاق IPD",
+    "foam interface": "بطانة الوجه",
+    "upholstery": "الكسوة الخارجية",
+    "armrests": "المساند الجانبية",
+    "reclines": "إمالة الظهر",
+    "gas lift class": "مساعد الغاز",
+    "weight capacity": "حمولة الوزن القصوى",
+
+    // Common specifications table values
+    "lightspeed 1ms wireless / bluetooth / usb wired": "اتصال لاسلكي لايت سبيد 1 ملي ثانية / بلوتوث / سلكي USB",
+    "low-profile gl mechanical switches (tactile / linear / clicky)": "مفاتيح ميكانيكية GL منخفضة الارتفاع (Tactile / Linear / Clicky)",
+    "up to 40 hours (100% rgb brightness)": "حتى 40 ساعة (بسطوع كامل للإضاءة)",
+    "aircraft-grade 5052 aluminum top plate, steel-reinforced base": "لوحة علوية من الألومنيوم المستخدم في الطائرات فئة 5052، قاعدة معززة بالفولاذ",
+    "hero 2 sensor": "مستشعر HERO 2 الاحترافي",
+    "100 – 32,000 dpi": "100 - 32,000 نقطة لكل بوصة (DPI)",
+    "500 ips": "500 بوصة في الثانية (IPS)",
+    "40g": "40 جيجا (التسارع)",
+    "8000 hz (0.125ms) wireless lightspeed": "8000 هرتز (0.125 ملي ثانية) لاسلكي لايت سبيد",
+    "hybrid lightforce switches (optical-mechanical)": "مفاتيح هجينة لايت فورس (بصرية-ميكانيكية)",
+    "up to 95 hours (constant motion)": "حتى 95 ساعة من الحركة المستمرة",
+    "ergonomic right-handed (dex design)": "تصميم مريح لليد اليمنى (تصميم ديكس)",
+    "hero 25k sensor": "مستشعر HERO 25K الاحترافي",
+    "lightspeed wireless / usb-c wired": "لاسلكي لايت سبيد / سلكي USB-C",
+    "up to 95 hours": "حتى 95 ساعة",
+    "ultra-lightweight 60g": "خفيف الوزن للغاية 60 جرام",
+    "analog optical switches (rapid trigger / adjustable actuation 0.1-4.0mm)": "مفاتيح بصرية تناظرية (تأثير التشغيل السريع / تشغيل قابل للتعديل 0.1-4.0 مم)",
+    "detachable braided fiber usb-c": "كابل USB-C مغطى بألياف مضفرة قابل للفصل",
+    "double-shot pbt keycaps, magnetic wrist rest": "أغطية مفاتيح PBT مزدوجة الحقن، مسند معصم مغناطيسي",
+    "onboard profile storage, aluminum construction": "ذاكرة داخلية لحفظ الإعدادات، هيكل ألومنيوم متين",
+    "customized gateron custom gaming switches": "مفاتيح ألعاب مخصصة من جاتيرون",
+    "dual-mode wireless (2.4ghz / bluetooth 5.2)": "اتصال لاسلكي ثنائي الوضع (2.4 جيجاهرتز / بلوتوث 5.2)",
+    "up to 300 hours (rgb off) / 100 hours (rgb on)": "حتى 300 ساعة (بدون إضاءة) / 100 ساعة (مع إضاءة)",
+    "pbt side-printed keycaps, aircraft alloy frame": "أغطية مفاتيح PBT مطبوعة جانبياً، إطار من سبيكة الطائرات",
+    "high-density sound absorbing foam padding": "حشوة فوم عالية الكثافة لامتصاص الضوضاء",
+    "custom co-designed opto-mechanical switches": "مفاتيح بصرية ميكانيكية مصممة خصيصاً بالتعاون",
+    "detachable custom type-c braided cable": "كابل مغطى بألياف مضفرة قابل للفصل Type-C",
+    "dye-subbed premium pbt cherry-profile keycaps": "أغطية مفاتيح PBT ممتازة ومقاومة للبهتان بتصميم كرزي",
+    "solid steel build with integrated dual-mode soundproofing": "هيكل فولاذي صلب مع عزل صوتي متكامل ثنائي الوضع",
+
+    // Stock
+    "in stock — ready to ship": "متوفر في المخزون — جاهز للشحن الفوري",
+    "in stock": "متوفر في المخزون",
+    
+    // Trust tags
+    "free express shipping": "شحن سريع مجاني",
+    "arrives in 2-3 business days": "يصلك خلال 2-3 أيام عمل",
+    "2-year logitech warranty": "ضمان سنتين من لوجيتك",
+    "original authorized manufacturer replacement warranty": "ضمان استبدال معتمد من الشركة المصنعة الأصلية",
+    "secure checkout": "تشيك أوت آمن ومحمي 100%",
+    "bank-level instapay or cash on delivery security": "حماية بيانات بنكية، كاش عند الاستلام أو إنستاباي",
+    "secure payment checkout": "بوابة دفع مشفرة بالكامل",
+    "certified elite vendor guarantee": "ضمان الوكيل المعتمد الأصلي",
+
+    // Colors
+    "color: ": "اللون: ",
+    "carbon black": "أسود كاربون",
+    "white edition": "الإصدار الأبيض",
+    "red edition": "الإصدار الأحمر",
+    "blue edition": "الإصدار الأزرق",
+    "stealth black": "أسود متخفي (Stealth)",
+    "royal blue": "أزرق ملكي",
+    "ash grey": "رمادي رماد",
+    "neo pink": "وردي نيون",
+    "stellar shift": "تأثير ستيلر شيفت",
+    "electric volt": "فولت كهربائي",
+    "shock blue": "أزرق صاعق",
+    "pulse red": "أحمر نابض",
+
+    // Switches options labels
+    "switch type: ": "نوع المفاتيح: ",
+    "gl tactile (quiet)": "GL Tactile (هادئة بنقرة خفيفة)",
+    "gl clicky (audible)": "GL Clicky (صوت نقرة مسموع وجذاب)",
+    "gl linear (smooth)": "GL Linear (حركة ناعمة خطية وسريعة)",
+    
+    // Button span texts
+    "add to cart": "إضافة للسلة",
+    "proceed to checkout": "إتمام الشراء",
+    
+    // Additional specs and option keys
+    "form factor": "تصميم الهيكل",
+    "right-handed ergonomic": "تصميم مريح لليد اليمنى",
+    "hyperspeed wireless / usb-c wired": "لاسلكي هايبر سبيد / سلكي USB-C",
+    "focus x 26k optical sensor": "مستشعر Focus X 26K البصري",
+    "26,000 dpi": "26,000 DPI",
+    "50 g": "50 G (تسارع)",
+    "optical mouse switches gen-3 (90m clicks)": "مفاتيح ماوس بصرية الجيل الثالث (90 مليون نقرة)",
+    "up to 100 hours (1000hz polling)": "حتى 100 ساعة (معدل استطلاع 1000 هرتز)",
+    "55 g": "55 جرام",
+    "122.2 mm x 64.8 mm x 41.3 mm": "122.2 مم × 64.8 مم × 41.3 مم",
+    "polling rate": "معدل الاستطلاع",
+    "1000hz": "1000 هرتز",
+    "8000hz": "8000 هرتز",
+    "1000hz (standard)": "1000 هرتز (افتراضي)",
+    "8000hz (dongle needed)": "8000 هرتز (يتطلب دنجل)",
+    "color: carbon black": "اللون: أسود كاربون",
+    "color: white edition": "اللون: الإصدار الأبيض",
+    "color: red edition": "اللون: الإصدار الأحمر",
+    "color: blue edition": "اللون: الإصدار الأزرق",
+    "carbon black": "أسود كاربون",
+    "white edition": "الإصدار الأبيض",
+    "red edition": "الإصدار الأحمر",
+    "blue edition": "الإصدار الأزرق",
+    "stealth black": "أسود متخفي (Stealth)",
+    "128gb storage": "128 جيجا بايت تخزين",
+    "512gb storage (+$120)": "512 جيجا بايت تخزين (+ $120)",
+    "standard soft strap": "حزام مريح قياسي",
+    "elite battery strap (+$100)": "حزام النخبة مع بطارية (+ $100)",
+    "premium leatherette": "جلد فاخر",
+    "breathable fabric mesh": "قماش شبكي جيد التهوية",
+    "regular (170-189cm)": "قياسي (170-189 سم)",
+    "xl (190-200cm)": "XL عريض (190-200 سم)",
+    "small (under 170cm)": "صغير (أقل من 170 سم)",
+    "gl tactile (quiet)": "GL Tactile (نقرة هادئة ملموسة)",
+    "gl clicky (audible)": "GL Clicky (نقرة صوتية مسموعة)",
+    "gl linear (smooth)": "GL Linear (حركة ناعمة سريعة)",
+    "founders edition (triple-slot fan)": "نسخة فاوندرز (مروحة ثلاثية الفتحات)",
+    "custom oc (triple-slot fan)": "مروحة ثلاثية مكسورة السرعة (OC)",
+    "liquid cooled aio": "تبريد مائي متكامل AIO",
+    "32gb gddr7": "32 جيجا بايت GDDR7",
+    "48gb gddr7": "48 جيجا بايت GDDR7",
+    "anti-glare matte": "مضاد للتوهج مطفي",
+    "glossy ar glass": "زجاج AR لامع",
+    "27\" wqhd 360hz": "27 بوصة WQHD بتردد 360 هرتز",
+    "32\" 4k uhd 240hz": "32 بوصة 4K UHD بتردد 240 هرتز",
+    "dual mini-led (uhd+ 120hz / fhd+ 240hz)": "Mini-LED ثنائي (UHD+ 120Hz / FHD+ 240Hz)",
+    "qhd oled 240hz": "شاشة QHD OLED بتردد 240 هرتز",
+    "32gb ram + 2tb ssd": "32 جيجا رام + 2 تيرا SSD",
+    "64gb ram + 4tb ssd": "64 جيجا رام + 4 تيرا SSD",
+    "standard grip": "مقبض قياسي",
+    "pro sticky grip": "مقبض احترافي مانع للانزلاق",
+    "neo hybrid leatherette": "جلد هجين NEO فاخر",
+    "softweave plus fabric": "نسيج SoftWeave Plus ناعم",
+    "premium napa leather": "جلد نابا الفاخر",
+
+    // Static reviews translations
+    "incredibly light and comfortable!": "خفيف ومريح للغاية بشكل لا يصدق!",
+    "the ergonomic shape fits my hand perfectly. at 55g, flicking in shooters feels effortless. the battery life easily lasts a couple of weeks of daily gaming.": "الشكل المريح يناسب يدي تماماً. بوزن 55 جراماً، أشعر أن التحريك السريع في ألعاب التصويب لا يتطلب أي مجهود. عمر البطارية يستمر بسهولة لبضعة أسابيع من اللعب اليومي.",
+    "amazing sensor, lightweight build": "مستشعر مذهل، وبنية خفيفة الوزن",
+    "the focus x sensor tracks flawlessly on both my glass pad and cordura surface. optical clicks are super crisp. great build quality.": "مستشعر Focus X يتتبع الحركات بشكل لا تشوبه شائبة على كل من لوحة الماوس الزجاجية والأسطح القماشية الكوردورا. النقرات البصرية نقية وحادة للغاية. جودة تصنيع رائعة.",
+
+    "best headset i've ever used.": "أفضل سماعة رأس استخدمتها على الإطلاق.",
+    "the dac unit makes adjusting game/chat mix on the fly so easy. the audio quality is incredible, i can hear footsteps exactly where they are. having hot-swappable batteries is a game-changer.": "تسهل وحدة DAC ضبط توازن صوت اللعبة والمحادثة أثناء اللعب بكل سهولة. جودة الصوت مذهلة، أستطيع سماع خطوات الأقدام وتحديد مكانها بدقة. ميزة البطاريات القابلة للتبديل السريع هي نقلة نوعية.",
+    "perfect sound, excellent anc": "صوت مثالي، وعزل ضوضاء ممتاز",
+    "i play in a noisy room and the active noise cancellation works wonders. sound profile is rich and detailed. very comfortable fit!": "ألعب في غرفة صاخبة، ويعمل نظام إلغاء الضوضاء النشط (ANC) بشكل رائع. ملف الصوت غني ومفصل. مريحة جداً عند ارتدائها!",
+
+    "best competitive controller on the market!": "أفضل وحدة تحكم تنافسية في السوق!",
+    "the paddles feel clicky and tactile. the trigger locks make shot response times almost instant. absolutely no stick drift after a month of intense play!": "أزرار الـ Paddles الخلفية سريعة الاستجابة ومرضية للغاية. أقفال الأزرار الخلفية تجعل وقت الاستجابة لإطلاق النار فورياً تقريباً. لا يوجد أي انحراف في الماوس (Stick Drift) على الإطلاق بعد شهر من اللعب المكثف!",
+    "incredible responsiveness, rubber grips are great": "استجابة لا تصدق، ومقابض مطاطية رائعة",
+    "buttons click like mechanical mouse switches. fits perfectly in the hand, and the software lets you map profiles easily on the fly.": "تضغط الأزرار مثل أزرار الماوس الميكانيكية. تناسب اليد تماماً، ويسمح لك البرنامج بتعيين الإعدادات بسهولة أثناء اللعب.",
+
+    "the absolute best gaming chair.": "أفضل كرسي ألعاب على الإطلاق.",
+    "the adaptive lumbar support is amazing—it actually moves with you when you lean. the premium epu synthetic leather feels extremely high quality. assembly was very straightforward.": "دعم القطنية التكيفي مذهل - فهو يتحرك معك فعلياً عند الانحناء. جلد EPU الاصطناعي الممتاز ذو جودة عالية للغاية. كان التجميع سهلاً ومباشراً للغاية.",
+    "incredibly ergonomic, worth every penny": "مريح للغاية، يستحق كل قرش",
+    "i spend 10+ hours a day at my desk, and this chair has completely eliminated my back pain. the high density foam is firm but comfortable.": "أقضي أكثر من 10 ساعات يومياً على مكتبي، وقد قضى هذا الكرسي تماماً على آلام ظهري. الفوم عالي الكثافة متماسك ومريح للغاية.",
+
+    "next-gen vr is finally here!": "جيل جديد من الواقع الافتراضي هنا أخيراً!",
+    "the mixed reality passthrough is clear enough to read my phone screen. pancake lenses make everything sharp from edge to edge. a massive upgrade over the quest 2.": "خاصية العبور (Passthrough) للواقع المختلط واضحة بما يكفي لقراءة شاشة هاتفي. عدسات البانكيك تجعل كل شيء حاداً من الحافة إلى الحافة. ترقية هائلة مقارنة بـ Quest 2.",
+    "incredible experience, but elite strap is a must": "تجربة مذهلة، لكن حزام النخبة ضروري",
+    "graphics are crisp, and the system is fast. the default strap is okay, but i highly recommend upgrading to the elite strap for better weight distribution.": "الرسومات حادة للغاية، والنظام سريع. الحزام الافتراضي مقبول، لكنني أنصح بشدة بالترقية إلى حزام Elite لتوزيع الوزن بشكل أفضل.",
+
+    "absolutely breathtaking oled display!": "شاشة OLED خلابة تحبس الأنفاس!",
+    "the colors are incredibly vibrant, and the blacks are perfectly deep. 240hz refresh rate combined with near-instant response time makes gaming smoother than ever.": "الألوان نابضة بالحياة بشكل لا يصدق، واللون الأسود عميق ومثالي. معدل التحديث 240 هرتز مع زمن الاستجابة الفوري تقريباً يجعل الألعاب أسلس من أي وقت مضى.",
+    "endless premium features, great heat dissipation": "ميزات ممتازة لا حصر لها، وتشتيت حراري رائع",
+    "the custom heatsink keeps the panel cool, reducing burn-in risk. smart kvm is super useful for my dual pc setup. stunning design!": "المشتت الحراري المخصص يحافظ على برودة اللوحة، مما يقلل من خطر الاحتراق الذاتي. ميزة Smart KVM مفيدة جداً لإعداد الكمبيوتر المزدوج الخاص بي. تصميم مذهل!",
+
+    "the ultimate portable powerhouse": "وحش الأداء المحمول الأقوى على الإطلاق",
+    "the mini-led dual-mode display is insane—switching between 4k creative work and high-refresh fhd gaming is seamless. build quality rivals apple. gets warm, but performance is unmatched.": "شاشة Mini-LED ثنائية الوضع مذهلة - التبديل بين دقة 4K للعمل الإبداعي ودقة FHD بمعدل تحديث عالٍ للألعاب سلس للغاية. جودة التصنيع تنافس آبل. يسخن قليلاً، لكن الأداء لا مثيل له.",
+    "unbelievable graphics performance": "أداء رسوميات لا يصدق",
+    "rtx 4090 in a laptop this thin feels like black magic. cyberpunk with full ray reconstruction runs buttery smooth. pricey, but absolutely worth it.": "وجود بطاقة RTX 4090 في لابتوب بهذا السمك النحيف يبدو وكأنه سحر. لعبة Cyberpunk مع تقنية تتبع الأشعة الكاملة تعمل بسلاسة فائقة. غالي الثمن، ولكنه يستحق كل قرش بالتأكيد.",
+
+    "absolute monster of a gpu!": "بطاقة رسوميات وحش بكل ما تحمله الكلمة من معنى!",
+    "this card handles anything i throw at it at 4k max settings. temps never exceed 60c even under full load thanks to the massive cooler. power-hungry but incredible.": "هذه البطاقة تتعامل مع أي شيء أشغله عليها بدقة 4K وبأقصى إعدادات. درجات الحرارة لا تتجاوز 60 درجة مئوية أبداً حتى تحت الضغط الكامل بفضل المبرد الضخم. تستهلك طاقة كبيرة ولكنها مذهلة.",
+    "utterly flawless 4k gaming and ai workloads": "ألعاب 4K وسير عمل الذكاء الاصطناعي بلا أي أخطاء",
+    "rendering and training models is blazing fast. frame generation in games feels like magic. make sure you have a massive case and a top-tier power supply!": "عمليات الرندر وتدريب النماذج سريعة للغاية. توليد الإطارات (Frame Generation) في الألعاب يشبه السحر. تأكد من أن لديك صندوق حاسوب ضخم ومزود طاقة من الدرجة الأولى!",
+
+    "absolutely love it! highly recommend": "أحببته كثيراً! أنصح به بشدة",
+    "exceeded my expectations in every way. the material feels premium, and it performs flawlessly. shipping was fast too.": "فاق توقعاتي في كل شيء. المواد تبدو ممتازة، ويؤدي وظيفته بلا عيوب. كان الشحن سريعاً أيضاً.",
+    "great value for the price": "قيمة رائعة مقابل السعر",
+    "good quality and works exactly as described. will definitely buy from neontech again!": "جودة جيدة ويعمل تماماً كما هو موصوف. بالتأكيد سأشتري من NeonTech مرة أخرى!",
+
+    "best keyboard i have ever owned. period.": "أفضل لوحة مفاتيح امتلكتها على الإطلاق. بلا شك.",
+    "the low-profile switches are incredibly satisfying to type on. the battery life is amazing — i get almost two weeks with moderate rgb use. lightspeed wireless has zero noticeable latency. highly recommended!": "المفاتيح منخفضة الارتفاع مرضية للغاية في الكتابة عليها. عمر البطارية مذهل - أحصل على أسبوعين تقريباً مع الاستخدام المعتدل لإضاءة RGB. اتصال Lightspeed اللاسلكي ليس به أي زمن انتقال ملحوظ. موصى به بشدة!",
+    "superb premium build, slightly expensive": "بنية ممتازة ورائعة، باهظة الثمن قليلاً",
+    "the aluminum finish looks fantastic on my desk. keycap legends are sharp, and the software works well. my only complaint is the price, but you definitely get what you pay for in terms of quality.": "تشطيب الألومنيوم يبدو رائعاً للغاية على مكتبي. طباعة أغطية المفاتيح حادة، والبرنامج يعمل بشكل جيد. شكواي الوحيدة هي السعر، لكنك بالتأكيد تحصل على ما تدفع مقابله من حيث الجودة.",
+
+    "mixed reality is mind-blowing!": "الواقع المختلط مذهل ومدهش للغاية!",
+    "amazing clarity, strap could be better": "وضوح مذهل، والحزام يمكن أن يكون أفضل",
+    "best display for gaming, period.": "أفضل شاشة للألعاب بلا منازع.",
+    "extremely fast, but needs a dark room": "سريعة للغاية، لكنها تحتاج لغرفة مظلمة",
+    "mindblowing performance in a portable package": "أداء مذهل في هيكل محمول وسهل النقل",
+    "excellent workstation and gaming powerhouse": "محطة عمل ممتازة ووحش ألعاب حقيقي",
+    "unparalleled power, path tracing is flawless": "قوة لا مثيل لها، وتتبع المسار مثالي ومذهل",
+    "a dream for machine learning and rendering": "حلم لتعلم الآلة وعمليات الرندر",
+    "incredible back support!": "دعم ظهر مذهل للغاية!",
+    "premium quality worth every penny": "جودة عالية تستحق كل قرش"
+};
+
+function translatePage(lang) {
+    const t = translations[lang];
+    if (!t) return;
+    
+    // Set html lang and body dir attributes
+    document.documentElement.lang = lang;
+    if (lang === 'ar') {
+        document.body.classList.add("lang-ar");
+        document.body.dir = "rtl";
+    } else {
+        document.body.classList.remove("lang-ar");
+        document.body.dir = "ltr";
+    }
+    
+    // Search input placeholder
+    const searchInput = document.querySelector(".nav-search input");
+    if (searchInput) {
+        searchInput.placeholder = t.searchPlaceholder;
+    }
+    
+    // Sidebar section title
+    const sidebarTitle = document.querySelector(".sidebar-section:first-child .sidebar-title");
+    if (sidebarTitle) {
+        sidebarTitle.textContent = t.categoriesTitle;
+    }
+    
+    // Translate filters
+    const filterItems = document.querySelectorAll(".sidebar .filter-item");
+    filterItems.forEach(item => {
+        const countSpan = item.querySelector(".filter-count");
+        const countText = countSpan ? countSpan.outerHTML : "";
+        const iconSpan = item.querySelector(".filter-icon");
+        const iconText = iconSpan ? iconSpan.outerHTML : "";
+        
+        let text = item.textContent.replace(countSpan ? countSpan.textContent : "", "").trim();
+        let lower = text.toLowerCase();
+        let key = "";
+        if (lower.includes("all products") || lower.includes("كل المنتجات")) key = "allProducts";
+        else if (lower.includes("controllers") || lower.includes("أجهزة التحكم")) key = "controllers";
+        else if (lower.includes("monitors") || lower.includes("الشاشات")) key = "monitors";
+        else if (lower.includes("headsets") || lower.includes("سماعات الرأس")) key = "headsets";
+        else if (lower.includes("keyboards") || lower.includes("لوحات المفاتيح")) key = "keyboards";
+        else if (lower.includes("mice") || lower.includes("الماوسات")) key = "mice";
+        else if (lower.includes("laptops") || lower.includes("لاب توب")) key = "laptops";
+        else if (lower.includes("graphics cards") || lower.includes("كروت الشاشة")) key = "graphicsCards";
+        else if (lower.includes("vr headsets") || lower.includes("نظارات الواقع الافتراضي")) key = "vrHeadsets";
+        else if (lower.includes("gaming chairs") || lower.includes("كراسي القيمنق")) key = "gamingChairs";
+        
+        if (key && t[key]) {
+            item.innerHTML = `<span>${iconText}${t[key]}</span>${countText}`;
+        }
+    });
+    
+    // Brands Title translation
+    const brandsTitle = document.querySelectorAll(".sidebar-section")[1]?.querySelector(".sidebar-title");
+    if (brandsTitle) {
+        brandsTitle.textContent = t.brandsTitle;
+    }
+    
+    // Price title translation
+    const priceTitle = document.querySelectorAll(".sidebar-section")[2]?.querySelector(".sidebar-title");
+    if (priceTitle) {
+        priceTitle.textContent = t.priceRangeTitle;
+    }
+    
+    // Exit Intent Discount
+    const exitModal = document.querySelector(".exit-modal");
+    if (exitModal) {
+        const titleEl = exitModal.querySelector(".exit-title") || exitModal.querySelector("h2");
+        const descEl = exitModal.querySelector(".exit-desc") || exitModal.querySelector("p");
+        const closeBtnEl = exitModal.querySelector(".close-btn");
+        const dismissLink = exitModal.querySelector(".dismiss-link") || exitModal.querySelector(".close-link");
+        
+        if (titleEl) titleEl.textContent = t.exitTitle;
+        if (descEl) {
+            descEl.innerHTML = `${t.exitDesc} <span class="coupon-code">SALAH10</span>`;
+        }
+        if (closeBtnEl && closeBtnEl.tagName !== "BUTTON") {
+            closeBtnEl.textContent = "×";
+        }
+        if (dismissLink) dismissLink.textContent = t.exitClose;
+    }
+    
+    // Cart Drawer Header & Empty State
+    const cartHeader = document.querySelector("#cart-drawer h2");
+    if (cartHeader) {
+        cartHeader.textContent = t.cartTitle;
+    }
+    const emptyStateText = document.querySelector(".cart-empty-state p");
+    if (emptyStateText) {
+        emptyStateText.textContent = t.emptyCart;
+    }
+    const emptyStateBtn = document.querySelector("#cart-shop-now");
+    if (emptyStateBtn) {
+        emptyStateBtn.textContent = t.shopNow;
+    }
+    const checkoutBtn = document.getElementById("checkout-btn");
+    if (checkoutBtn) {
+        checkoutBtn.textContent = t.buyNow;
+    }
+    
+    // Detail page buttons
+    const pAddCartBtn = document.querySelector(".p-add-cart-btn span") || document.querySelector(".p-add-cart-btn");
+    if (pAddCartBtn) {
+        pAddCartBtn.textContent = t.addToCart;
+    }
+    const qtyLabel = document.querySelector(".qty-label");
+    if (qtyLabel) {
+        qtyLabel.textContent = t.qtyLabel;
+    }
+    
+    // Tab Button Titles
+    const tabBtns = document.querySelectorAll(".tab-btn");
+    tabBtns.forEach(btn => {
+        let text = btn.textContent.trim().toLowerCase();
+        if (text.includes("description") || text.includes("الوصف")) {
+            btn.textContent = t.descTab;
+        } else if (text.includes("specifications") || text.includes("المواصفات")) {
+            btn.textContent = t.specsTab;
+        } else if (text.includes("reviews") || text.includes("المراجعات")) {
+            btn.textContent = t.reviewsTab;
+        }
+    });
+    
+    const reviewsHeader = document.querySelector(".reviews-header h3");
+    if (reviewsHeader) {
+        let countText = reviewsHeader.textContent.match(/\d+/);
+        let count = countText ? countText[0] : "0";
+        reviewsHeader.textContent = lang === 'ar' ? `المراجعات (${count})` : `Reviews (${count})`;
+    }
+    
+    // Live Gamers Simulator Switch
+    const viewersTextList = document.querySelectorAll(".viewers-text");
+    viewersTextList.forEach(viewerText => {
+        const countSpan = viewerText.querySelector(".viewers-count");
+        if (countSpan) {
+            const count = countSpan.textContent.trim();
+            viewerText.innerHTML = lang === 'ar' 
+                ? `مباشر: <span class="viewers-count">${count}</span> لاعبين يتصفحون الآن`
+                : `Live: <span class="viewers-count">${count}</span> Gamers`;
+        }
+    });
+
+    // Detailed Product Page Custom Translation Block
+    if (lang === 'ar') {
+        // Translate specifications tables
+        const specRows = document.querySelectorAll(".specs-table tr");
+        specRows.forEach(row => {
+            const th = row.querySelector("th");
+            const td = row.querySelector("td");
+            if (th) {
+                const key = th.textContent.trim().toLowerCase();
+                if (staticPhrases[key]) th.textContent = staticPhrases[key];
+            }
+            if (td) {
+                const key = td.textContent.trim().toLowerCase();
+                if (staticPhrases[key]) td.textContent = staticPhrases[key];
+            }
+        });
+
+        // Translate trust tags
+        const tagItems = document.querySelectorAll(".tag-item");
+        tagItems.forEach(item => {
+            const title = item.querySelector(".tag-title");
+            const sub = item.querySelector(".tag-sub");
+            if (title) {
+                const key = title.textContent.trim().toLowerCase();
+                if (staticPhrases[key]) title.textContent = staticPhrases[key];
+            }
+            if (sub) {
+                const key = sub.textContent.trim().toLowerCase();
+                if (staticPhrases[key]) sub.textContent = staticPhrases[key];
+            }
+        });
+
+        // Translate stock status
+        const stockStatus = document.querySelector(".p-stock-status");
+        if (stockStatus) {
+            const dot = stockStatus.querySelector(".pulse-dot");
+            const text = stockStatus.textContent.trim().toLowerCase();
+            let matchedText = "متوفر في المخزون — جاهز للشحن الفوري";
+            if (text.includes("in stock")) {
+                matchedText = "متوفر في المخزون — جاهز للشحن الفوري";
+            }
+            stockStatus.innerHTML = "";
+            if (dot) stockStatus.appendChild(dot);
+            stockStatus.appendChild(document.createTextNode(" " + matchedText));
+        }
+
+        // Define bilingual option labels maps
+        const optionLabelsMap = {
+            "color:": "اللون:",
+            "switch type:": "نوع المفاتيح:",
+            "ear cushion:": "وسادة الأذن:",
+            "polling rate:": "معدل الاستطلاع:",
+            "storage capacity:": "سعة التخزين:",
+            "head strap:": "حزام الرأس:",
+            "screen size:": "حجم الشاشة:",
+            "panel finish:": "طلاء الشاشة:",
+            "display mode:": "وضع العرض:",
+            "configuration:": "المواصفات الأساسية:",
+            "cooling form factor:": "نظام التبريد:",
+            "memory:": "الذاكرة الرسومية:",
+            "grip type:": "نوع المقبض:",
+            "upholstery:": "الخامة الخارجية:",
+            "size:": "الحجم:"
+        };
+
+        const optionLabelsMapEn = {
+            "color:": "Color:",
+            "switch type:": "Switch Type:",
+            "ear cushion:": "Ear Cushion:",
+            "polling rate:": "Polling Rate:",
+            "storage capacity:": "Storage Capacity:",
+            "head strap:": "Head Strap:",
+            "screen size:": "Screen Size:",
+            "panel finish:": "Panel Finish:",
+            "display mode:": "Display Mode:",
+            "configuration:": "Configuration:",
+            "cooling form factor:": "Cooling Form Factor:",
+            "memory:": "Memory:",
+            "grip type:": "Grip Type:",
+            "upholstery:": "Upholstery:",
+            "size:": "Size:"
+        };
+
+        // Translate option groups label and pill buttons dynamically for all products
+        const optionGroups = document.querySelectorAll(".option-group");
+        optionGroups.forEach(group => {
+            const label = group.querySelector(".option-label");
+            if (label) {
+                const selectedVal = label.querySelector(".selected-val");
+                const selectedValText = selectedVal ? selectedVal.textContent.trim() : "";
+                
+                // Extract clean label text without the selected-val text
+                let cleanLabel = label.textContent.replace(selectedValText, "").trim().toLowerCase();
+                
+                if (lang === 'ar') {
+                    let arabicLabel = "";
+                    for (let key in optionLabelsMap) {
+                        if (cleanLabel.includes(key)) {
+                            arabicLabel = optionLabelsMap[key];
+                            break;
+                        }
+                    }
+                    if (arabicLabel) {
+                        const translatedVal = staticPhrases[selectedValText.toLowerCase().trim()] || selectedValText;
+                        label.innerHTML = `${arabicLabel} <span class="selected-val">${translatedVal}</span>`;
+                    }
+                } else {
+                    // English
+                    let englishLabel = "";
+                    for (let key in optionLabelsMapEn) {
+                        if (cleanLabel.includes(key)) {
+                            englishLabel = optionLabelsMapEn[key];
+                            break;
+                        }
+                    }
+                    if (englishLabel) {
+                        const checkedRadio = group.querySelector("input[type='radio']:checked");
+                        let origVal = selectedValText;
+                        if (checkedRadio) {
+                            const pill = checkedRadio.closest(".opt-pill");
+                            const pillBtn = pill ? pill.querySelector(".opt-pill-btn") : null;
+                            if (pillBtn) {
+                                origVal = pillBtn.textContent.trim();
+                            }
+                        }
+                        label.innerHTML = `${englishLabel} <span class="selected-val">${origVal}</span>`;
+                    }
+                }
+            }
+
+            // Translate pill buttons themselves (so they are localized in the choice options)
+            const pills = group.querySelectorAll(".opt-pill-btn");
+            pills.forEach(pill => {
+                const text = pill.textContent.trim().toLowerCase();
+                if (lang === 'ar') {
+                    if (staticPhrases[text]) {
+                        pill.textContent = staticPhrases[text];
+                    }
+                } else {
+                    // Restore English
+                    const radio = pill.previousElementSibling || pill.closest(".opt-pill")?.querySelector("input[type='radio']");
+                    if (radio) {
+                        let originalText = radio.value;
+                        let valueMapping = {
+                            "carbon": "Carbon Black",
+                            "white": "White Edition",
+                            "red": "Red Edition",
+                            "blue": "Blue Edition",
+                            "1000": "1000Hz (Standard)",
+                            "8000": "8000Hz (Dongle Needed)",
+                            "128": "128GB Storage",
+                            "512": "512GB Storage (+$120)",
+                            "standard": "Standard Soft Strap",
+                            "elite": "Elite Battery Strap (+$100)",
+                            "leatherette": "Premium Leatherette",
+                            "fabric": "Breathable Fabric Mesh",
+                            "regular": "Regular (170-189cm)",
+                            "xl": "XL (190-200cm)",
+                            "small": "Small (Under 170cm)",
+                            "gl-tactile": "GL Tactile (Quiet)",
+                            "gl-clicky": "GL Clicky (Audible)",
+                            "gl-linear": "GL Linear (Smooth)",
+                            "founders": "Founders Edition (Triple-Slot Fan)",
+                            "triple-fan": "Custom OC (Triple-Slot Fan)",
+                            "liquid": "Liquid Cooled AIO",
+                            "32gb": "32GB GDDR7",
+                            "48gb": "48GB GDDR7",
+                            "matte": "Anti-Glare Matte",
+                            "glossy": "Glossy AR Glass",
+                            "27-360": "27\" WQHD 360Hz",
+                            "32-240": "32\" 4K UHD 240Hz",
+                            "dual-mode": "Dual Mini-LED (UHD+ 120Hz / FHD+ 240Hz)",
+                            "oled-mode": "QHD OLED 240Hz",
+                            "32gb-2tb": "32GB RAM + 2TB SSD",
+                            "64gb-4tb": "64GB RAM + 4TB SSD",
+                            "standard-grip": "Standard Grip",
+                            "sticky-grip": "Pro Sticky Grip",
+                            "hybrid-leather": "NEO Hybrid Leatherette",
+                            "softweave": "SoftWeave Plus Fabric",
+                            "nappa": "Premium Napa Leather"
+                        };
+                        if (originalText && valueMapping[originalText]) {
+                            if (originalText === "carbon" && (document.title.includes("Secretlab") || document.title.includes("Titan"))) {
+                                pill.textContent = "Stealth Black";
+                            } else {
+                                pill.textContent = valueMapping[originalText];
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        // Translate page custom titles and descriptions dynamically based on matching
+        const pTitle = document.querySelector(".p-title");
+        const pDesc = document.querySelector(".p-desc");
+        if (pTitle) {
+            const titleText = pTitle.textContent.trim().toLowerCase();
+            if (titleText.includes("g915")) {
+                pTitle.textContent = "لوحة مفاتيح لوجيتك G915 TKL اللاسلكية";
+                if (pDesc) pDesc.textContent = "ثورة في التصميم والهندسة. تتميز لوحة G915 TKL بتقنية LIGHTSPEED اللاسلكية الاحترافية وإضاءة LIGHTSYNC RGB المتطورة ومفاتيح ميكانيكية منخفضة الحجم عالية الأداء.";
+            } else if (titleText.includes("titan evo")) {
+                pTitle.textContent = "كرسي الألعاب سيكريت لاب تايتان إيفو إصدار 2026";
+                if (pDesc) pDesc.textContent = "كرسي الألعاب الحائز على الجوائز. يوفر سيكريت لاب تايتان إيفو راحة مريحة فائقة وتصميماً مريحاً للألعاب وجلسات العمل الطويلة.";
+            } else if (titleText.includes("xbox")) {
+                pTitle.textContent = "جهاز تحكم إكس بوكس اللاسلكي — ستيلر شيفت";
+                if (pDesc) pDesc.textContent = "ارتقِ بمستوى لعبك مع جهاز تحكم إكس بوكس اللاسلكي الذي يتميز بتصميم أنيق ومسكات مطاطية مريحة وتغيير الألوان الفريد.";
+            } else if (titleText.includes("rtx 5090")) {
+                pTitle.textContent = "كارت الشاشة أسوس روج ستريكس جيفورس RTX 5090";
+                if (pDesc) pDesc.textContent = "أقوى كارت شاشة للجيمنج وصناع المحتوى بمستويات أداء خيالية مع تقنية DLSS 4 والجيل الجديد من تتبع الأشعة وتصميم نيون رائع.";
+            } else if (titleText.includes("arctis nova")) {
+                pTitle.textContent = "سماعة ستيل سيريز أركتيس نوفا برو اللاسلكية";
+                if (pDesc) pDesc.textContent = "اسمع تفاصيل اللعبة كأنك بداخلها مع جودة الصوت الاحترافية ونظام إلغاء الضوضاء النشط المتطور وعمر بطارية خارق للعادة.";
+            } else if (titleText.includes("blade 16")) {
+                pTitle.textContent = "لاب توب القيمنق رايزر بليد 16 (إصدار 2026)";
+                if (pDesc) pDesc.textContent = "أطلق العنان لأقوى أداء للجيمنج مع شاشة مذهلة قياس 16 بوصة، معالج فائق السرعة وكارت شاشة RTX 5090 لتشغيل أثقل الألعاب بسلاسة.";
+            } else if (titleText.includes("odyssey oled")) {
+                pTitle.textContent = "شاشة سامسونج أوديسي OLED G9 منحنية 49 بوصة";
+                if (pDesc) pDesc.textContent = "ادخل إلى عصر جديد من اللعب مع شاشة عريضة مذهلة بدقة خيالية وزمن استجابة فائق السرعة 0.03ms لمتعة ألعاب لا تنتهي.";
+            } else if (titleText.includes("superlight 2")) {
+                pTitle.textContent = "ماوس لوجيتك جي برو إكس سوبرلايت 2 ديكس";
+                if (pDesc) pDesc.textContent = "المعيار الذهبي الجديد لماوسات الألعاب الاحترافية. خفة متناهية في الوزن 60 جرام ودقة أسطورية للحركات السريعة بفضل مستشعر Hero 2.";
+            } else if (titleText.includes("quest 3")) {
+                pTitle.textContent = "نظارة الواقع الافتراضي ميتا كويست 3 مساحة 512 جيجا";
+                if (pDesc) pDesc.textContent = "وسع عالمك واستكشف الواقع المختلط والممتد مع أقوى نظارة ألعاب مستقلة وتتبع دقيق لليدين لتجربة لعب خيالية ومثيرة.";
+            } else if (titleText.includes("deathadder") || titleText.includes("hyperspeed")) {
+                pTitle.textContent = "ماوس رايزر ديف أدر V3 هايبر سبيد اللاسلكي";
+                if (pDesc) pDesc.textContent = "تأتي الراحة المريحة الاحترافية بوزن أخف. بوزن 55 جرامًا فقط، تم تحسين ماوس Razer DeathAdder V3 HyperSpeed لتحقيق السرعة والدقة المذهلة والراحة الفائقة بفضل مستشعر Focus X 26K البصري المتطور.";
+            } else if (titleText.includes("blackshark") || (titleText.includes("headset") && titleText.includes("shark"))) {
+                pTitle.textContent = "سماعة رايزر بلاك شارك V2 برو اللاسلكية";
+                if (pDesc) pDesc.textContent = "صوت وراحة لا مثيل لهما. تتميز سماعة Razer BlackShark V2 Pro بميكروفون فائق الوضوح وصوت محيطي مذهل للاعبين المحترفين.";
+            } else if (titleText.includes("wolverine") || titleText.includes("wolverine v3")) {
+                pTitle.textContent = "يد تحكم رايزر ولفيرين V3 برو اللاسلكية";
+                if (pDesc) pDesc.textContent = "أقوى يد تحكم لاسلكية احترافية للجيمنج مصممة للإكس بوكس والكمبيوتر الشخصي بميزات تخصيص استثنائية وأداء خارق.";
+            }
+        }
+        
+        // 8. Product Details Page Deep Translation Block
+        
+        // Translate Breadcrumbs
+        const breadcrumbs = document.querySelectorAll(".breadcrumbs a, .breadcrumbs .current");
+        breadcrumbs.forEach(link => {
+            const text = link.textContent.trim().toLowerCase();
+            if (text === "home" || text === "الرئيسية") link.textContent = "الرئيسية";
+            else if (text === "mice" || text === "الماوسات") link.textContent = "الماوسات";
+            else if (text === "keyboards" || text === "لوحات المفاتيح") link.textContent = "لوحات المفاتيح";
+            else if (text === "headsets" || text === "سماعات الرأس") link.textContent = "سماعات الرأس";
+            else if (text === "controllers" || text === "أجهزة التحكم") link.textContent = "أجهزة التحكم";
+            else if (text === "gaming chairs" || text === "كراسي القيمنق") link.textContent = "كراسي القيمنق";
+            else if (text === "laptops" || text === "لاب توب") link.textContent = "لاب توب";
+            else if (text === "monitors" || text === "الشاشات") link.textContent = "الشاشات";
+        });
+        
+        // Translate rating count verified reviews
+        const ratingCount = document.querySelector(".p-rating-count");
+        if (ratingCount) {
+            const originalText = ratingCount.getAttribute("data-orig-rcount") || ratingCount.textContent.trim();
+            if (!ratingCount.getAttribute("data-orig-rcount")) {
+                ratingCount.setAttribute("data-orig-rcount", originalText);
+            }
+            if (lang === 'ar') {
+                const count = originalText.replace("verified reviews", "").trim();
+                ratingCount.textContent = `${count} تقييم موثق`;
+            } else {
+                ratingCount.textContent = originalText;
+            }
+        }
+        
+        // Translate tab labels
+        const tabLabels = document.querySelectorAll(".tab-label-btn");
+        tabLabels.forEach(lbl => {
+            const originalText = lbl.getAttribute("data-orig-tab") || lbl.textContent.trim();
+            if (!lbl.getAttribute("data-orig-tab")) {
+                lbl.setAttribute("data-orig-tab", originalText);
+            }
+            const text = originalText.toLowerCase();
+            if (lang === 'ar') {
+                if (text.includes("overview")) {
+                    lbl.textContent = "نظرة عامة";
+                } else if (text.includes("specs") || text.includes("technical")) {
+                    lbl.textContent = "المواصفات التقنية";
+                } else if (text.includes("reviews")) {
+                    const match = text.match(/\d+([.,]\d+)?/);
+                    const count = match ? ` (${match[0]})` : "";
+                    lbl.textContent = "المراجعات" + count;
+                }
+            } else {
+                lbl.textContent = originalText;
+            }
+        });
+
+        // Translate reviews aggregate score details
+        const scoreSub = document.querySelector(".score-sub");
+        if (scoreSub) {
+            const originalText = scoreSub.getAttribute("data-orig-sub") || scoreSub.textContent.trim();
+            if (!scoreSub.getAttribute("data-orig-sub")) {
+                scoreSub.setAttribute("data-orig-sub", originalText);
+            }
+            if (lang === 'ar') {
+                const match = originalText.match(/\d+([.,]\d+)?/);
+                const count = match ? match[0] : "";
+                scoreSub.textContent = `بناءً على ${count} تقييم مشترٍ موثق`;
+            } else {
+                scoreSub.textContent = originalText;
+            }
+        }
+        
+        const ratingStarLabels = document.querySelectorAll(".score-breakdown .bar-row > span:first-child");
+        ratingStarLabels.forEach(lbl => {
+            const originalText = lbl.getAttribute("data-orig-lbl") || lbl.textContent.trim();
+            if (!lbl.getAttribute("data-orig-lbl")) {
+                lbl.setAttribute("data-orig-lbl", originalText);
+            }
+            if (lang === 'ar') {
+                const lower = originalText.toLowerCase();
+                if (lower.includes("5 stars")) lbl.textContent = "5 نجوم";
+                else if (lower.includes("4 stars")) lbl.textContent = "4 نجوم";
+                else if (lower.includes("3 stars")) lbl.textContent = "3 نجوم";
+                else if (lower.includes("2 stars")) lbl.textContent = "2 نجوم";
+                else if (lower.includes("1 star")) lbl.textContent = "نجمة واحدة";
+            } else {
+                lbl.textContent = originalText;
+            }
+        });
+
+        // Translate existing static/dynamic review items
+        const reviewItems = document.querySelectorAll(".review-item");
+        reviewItems.forEach(item => {
+            const badge = item.querySelector(".badge-verified");
+            if (badge) {
+                badge.textContent = lang === 'ar' ? "مشتري موثق" : "Verified Buyer";
+            }
+            
+            const dateEl = item.querySelector(".review-date");
+            if (dateEl) {
+                const originalDate = dateEl.getAttribute("data-orig-date") || dateEl.textContent.trim();
+                if (!dateEl.getAttribute("data-orig-date")) {
+                    dateEl.setAttribute("data-orig-date", originalDate);
+                }
+                if (lang === 'ar') {
+                    let dateText = originalDate;
+                    const monthsMap = {
+                        "january": "يناير", "february": "فبراير", "march": "مارس", "april": "أبريل", "may": "مايو", "june": "يونيو",
+                        "july": "يوليو", "august": "أغسطس", "september": "سبتمبر", "october": "أكتوبر", "november": "نوفمبر", "december": "ديسمبر"
+                    };
+                    let lowerDate = dateText.toLowerCase();
+                    for (const [enMonth, arMonth] of Object.entries(monthsMap)) {
+                        if (lowerDate.includes(enMonth)) {
+                            dateText = dateText.toLowerCase().replace(enMonth, arMonth);
+                            break;
+                        }
+                    }
+                    dateEl.textContent = dateText;
+                } else {
+                    dateEl.textContent = originalDate;
+                }
+            }
+
+            const titleEl = item.querySelector(".review-title");
+            if (titleEl) {
+                const originalTitle = titleEl.getAttribute("data-orig-title") || titleEl.textContent.trim();
+                if (!titleEl.getAttribute("data-orig-title")) {
+                    titleEl.setAttribute("data-orig-title", originalTitle);
+                }
+                if (lang === 'ar') {
+                    const key = originalTitle.toLowerCase().trim();
+                    titleEl.textContent = staticPhrases[key] || originalTitle;
+                } else {
+                    titleEl.textContent = originalTitle;
+                }
+            }
+            
+            const textEl = item.querySelector(".review-text");
+            if (textEl) {
+                const originalTextVal = textEl.getAttribute("data-orig-text") || textEl.textContent.trim();
+                if (!textEl.getAttribute("data-orig-text")) {
+                    textEl.setAttribute("data-orig-text", originalTextVal);
+                }
+                if (lang === 'ar') {
+                    const key = originalTextVal.toLowerCase().trim();
+                    textEl.textContent = staticPhrases[key] || originalTextVal;
+                } else {
+                    textEl.textContent = originalTextVal;
+                }
+            }
+        });
+
+        // Translate Write Review Form dynamically if present
+        const writeReviewTitle = document.querySelector(".write-review-title");
+        if (writeReviewTitle) {
+            writeReviewTitle.textContent = lang === 'ar' ? "اكتب تقييمًا" : "WRITE A REVIEW";
+        }
+        const reviewRatingLabel = document.querySelector("#write-review-form div span");
+        if (reviewRatingLabel) {
+            reviewRatingLabel.textContent = lang === 'ar' ? "تقييمك بالنجوم:" : "Your Rating:";
+        }
+        const reviewAuthor = document.getElementById("review-author");
+        if (reviewAuthor && !reviewAuthor.readOnly) {
+            reviewAuthor.placeholder = lang === 'ar' ? "اسمك الكريم" : "Your Name";
+        }
+        const reviewTitleInput = document.getElementById("review-title");
+        if (reviewTitleInput) {
+            reviewTitleInput.placeholder = lang === 'ar' ? "عنوان المراجعة (مثال: أداء جبار!)" : "Review Title (e.g., Ultimate performance!)";
+        }
+        const reviewTextInput = document.getElementById("review-text");
+        if (reviewTextInput) {
+            reviewTextInput.placeholder = lang === 'ar' ? "شاركنا تجربتك للأداة الجيمنج..." : "Share your experience with this gaming gear...";
+        }
+        const reviewSubmitBtn = document.querySelector('#write-review-form button[type="submit"]');
+        if (reviewSubmitBtn) {
+            reviewSubmitBtn.textContent = lang === 'ar' ? "إرسال التقييم" : "Submit Review";
+        }
+        
+        // Translate Overview page headings and feature cards
+        const contentTitles = document.querySelectorAll(".tab-content .content-title, .related-products-section .section-title-label");
+        contentTitles.forEach(tEl => {
+            const text = tEl.textContent.trim().toLowerCase();
+            if (text.includes("ultra-lightweight")) {
+                tEl.textContent = "ماوس مريح وخفيف الوزن للغاية";
+            } else if (text.includes("technical specifications") || text.includes("specs")) {
+                tEl.textContent = "المواصفات التقنية";
+            } else if (text.includes("complete your setup") || text.includes("setup")) {
+                tEl.innerHTML = `أكمل <span>منصتك</span>`;
+            }
+        });
+        
+        const overviewP = document.querySelector(".overview-content p");
+        if (overviewP && overviewP.textContent.trim().toLowerCase().includes("tested and approved")) {
+            overviewP.textContent = "تم اختباره واعتماده من قبل أبطال الألعاب المحترفين. تم إعادة تصميم Razer DeathAdder V3 HyperSpeed بشكل محسّن لتوفير أقصى درجات الراحة والتحكم بفضل مستشعر Focus X البصري المتطور.";
+        }
+        
+        const fCardTitles = document.querySelectorAll(".feature-card .f-card-title");
+        fCardTitles.forEach(title => {
+            const text = title.textContent.trim().toLowerCase();
+            if (text.includes("55g")) {
+                title.textContent = "وزن خفيف للغاية 55 جرام";
+            } else if (text.includes("focus x")) {
+                title.textContent = "مستشعر Focus X البصري";
+            } else if (text.includes("switches")) {
+                title.textContent = "المفاتيح البصرية الجيل الثالث";
+            }
+        });
+        
+        const fCardTexts = document.querySelectorAll(".feature-card .f-card-text");
+        fCardTexts.forEach(txt => {
+            const text = txt.textContent.trim().toLowerCase();
+            if (text.includes("lightest ergonomic")) {
+                txt.textContent = "واحد من أخف ماوسات الألعاب المريحة التي تم تصميمها على الإطلاق. تحرك بسرعة وبدقة متناهية مع أقل قدر من التعب.";
+            } else if (text.includes("26,000 dpi")) {
+                txt.textContent = "مستشعر بدقة 26,000 نقطة في البوصة يتتبع حركاتك بدقة متناهية مع معايرة ذكية ومزامنة الحركة.";
+            } else if (text.includes("double-clicking")) {
+                txt.textContent = "خالٍ تماماً من مشاكل النقرات المزدوجة مع استجابة فائقة السرعة 0.2 ملي ثانية، وعمر افتراضي 90 مليون نقرة.";
+            }
+        });
+    }
+
+    // 7. Homepage Static Content Custom Translation Block
+    if (lang === 'ar') {
+        // Catalog Title
+        const catTitle = document.querySelector(".catalog-title");
+        if (catTitle) {
+            catTitle.innerHTML = `مستلزمات <span>الألعاب</span>`;
+        }
+
+        // Featured Banner (limited drop)
+        const featTag = document.querySelector(".featured-tag");
+        if (featTag) featTag.textContent = "إصدار محدود";
+        
+        const featTitle = document.querySelector(".featured-title");
+        if (featTitle) featTitle.innerHTML = `لوحة مفاتيح رايزر بلاك ويدو V4 برو &mdash; إصدار الفانتوم`;
+        
+        const featSub = document.querySelector(".featured-sub");
+        if (featSub) featSub.innerHTML = `مفاتيح ميكانيكية &bull; إضاءة كروما RGB &bull; استجابة ملموسة &bull; متبقي 200 قطعة فقط!`;
+        
+        const featShop = document.getElementById("featured-shop-now");
+        if (featShop) featShop.textContent = "تصفح المتجر";
+        
+        const featLearn = document.getElementById("featured-learn-more");
+        if (featLearn) featLearn.textContent = "اقرأ المزيد";
+
+        // Sort label
+        const sortSelect = document.querySelector(".sort-select");
+        if (sortSelect) {
+            const options = sortSelect.querySelectorAll("option");
+            const arOptions = ["المميز", "السعر: من الأقل للأعلى", "السعر: من الأعلى للأقل", "الأعلى تقييماً", "الأحدث"];
+            options.forEach((opt, idx) => {
+                if (arOptions[idx]) opt.textContent = arOptions[idx];
+            });
+        }
+
+        const filterToggleBtn = document.querySelector(".filter-toggle-btn");
+        if (filterToggleBtn) {
+            const svg = filterToggleBtn.querySelector("svg");
+            filterToggleBtn.innerHTML = "";
+            if (svg) filterToggleBtn.appendChild(svg);
+            filterToggleBtn.appendChild(document.createTextNode(" الفلاتر"));
+        }
+
+        // Comparison Bar
+        const compBarTitle = document.querySelector(".comp-bar-title");
+        if (compBarTitle) compBarTitle.textContent = "مقارنة المنتجات";
+        
+        const compBarDesc = document.querySelector(".comp-bar-desc");
+        if (compBarDesc) compBarDesc.textContent = "اختر حتى 3 منتجات للمقارنة جنباً إلى جنب";
+        
+        const compClearBtn = document.getElementById("comp-clear-btn");
+        if (compClearBtn) compClearBtn.textContent = "مسح الكل";
+        
+        const compCompareBtn = document.getElementById("comp-compare-btn");
+        if (compCompareBtn) compCompareBtn.textContent = "قارن الآن";
+        
+        const compModalTitle = document.querySelector(".comp-modal-title");
+        if (compModalTitle) compModalTitle.innerHTML = `مقارنة <span>المنتجات</span>`;
+
+        // Auth Modal Labels & Placeholders
+        const authTitle = document.querySelector(".auth-modal-title");
+        if (authTitle) {
+            const text = authTitle.textContent.toLowerCase();
+            if (text.includes("in") || text.includes("دخول")) {
+                authTitle.innerHTML = `تسجيل <span>الدخول</span>`;
+            } else if (text.includes("up") || text.includes("إنشاء")) {
+                authTitle.innerHTML = `إنشاء <span>حساب</span>`;
+            }
+        }
+
+        // Login Form
+        const loginForm = document.getElementById("login-form");
+        if (loginForm) {
+            const emailLabel = loginForm.querySelector("label[for='login-email']");
+            if (emailLabel) emailLabel.textContent = "البريد الإلكتروني";
+            const emailInput = loginForm.querySelector("#login-email");
+            if (emailInput) emailInput.placeholder = "name@example.com";
+            
+            const passLabel = loginForm.querySelector("label[for='login-password']");
+            if (passLabel) passLabel.textContent = "كلمة المرور";
+            const passInput = loginForm.querySelector("#login-password");
+            if (passInput) passInput.placeholder = "••••••••";
+            
+            const forgotLink = loginForm.querySelector("#switch-to-forgot");
+            if (forgotLink) forgotLink.textContent = "نسيت كلمة المرور؟";
+            
+            const submitBtn = loginForm.querySelector("button[type='submit']");
+            if (submitBtn) submitBtn.textContent = "تسجيل الدخول";
+            
+            const orSpan = loginForm.querySelector(".auth-divider span");
+            if (orSpan) orSpan.textContent = "أو";
+            
+            const googleBtn = loginForm.querySelector(".btn-google");
+            if (googleBtn) {
+                const svg = googleBtn.querySelector("svg");
+                googleBtn.innerHTML = "";
+                if (svg) googleBtn.appendChild(svg);
+                googleBtn.appendChild(document.createTextNode(" المتابعة باستخدام Google"));
+            }
+            
+            const switchText = loginForm.querySelector(".auth-switch");
+            if (switchText) {
+                switchText.innerHTML = `ليس لديك حساب؟ <a href="#" id="switch-to-signup" style="color: var(--neon); text-decoration: none;">إنشاء حساب جديد</a>`;
+            }
+        }
+
+        // Signup Form
+        const signupForm = document.getElementById("signup-form");
+        if (signupForm) {
+            const nameLabel = signupForm.querySelector("label[for='signup-name']");
+            if (nameLabel) nameLabel.textContent = "الاسم التعريفي";
+            const nameInput = signupForm.querySelector("#signup-name");
+            if (nameInput) nameInput.placeholder = "Gamer123";
+            
+            const emailLabel = signupForm.querySelector("label[for='signup-email']");
+            if (emailLabel) emailLabel.textContent = "البريد الإلكتروني";
+            const emailInput = signupForm.querySelector("#signup-email");
+            if (emailInput) emailInput.placeholder = "name@example.com";
+            
+            const passLabel = signupForm.querySelector("label[for='signup-password']");
+            if (passLabel) passLabel.textContent = "كلمة المرور";
+            const passInput = signupForm.querySelector("#signup-password");
+            if (passInput) passInput.placeholder = "••••••••";
+            
+            const confirmLabel = signupForm.querySelector("label[for='signup-password-confirm']");
+            if (confirmLabel) confirmLabel.textContent = "تأكيد كلمة المرور";
+            const confirmInput = signupForm.querySelector("#signup-password-confirm");
+            if (confirmInput) confirmInput.placeholder = "••••••••";
+            
+            const submitBtn = signupForm.querySelector("button[type='submit']");
+            if (submitBtn) submitBtn.textContent = "إنشاء حساب";
+            
+            const orSpan = signupForm.querySelector(".auth-divider span");
+            if (orSpan) orSpan.textContent = "أو";
+            
+            const googleBtn = signupForm.querySelector(".btn-google");
+            if (googleBtn) {
+                const svg = googleBtn.querySelector("svg");
+                googleBtn.innerHTML = "";
+                if (svg) googleBtn.appendChild(svg);
+                googleBtn.appendChild(document.createTextNode(" التسجيل باستخدام Google"));
+            }
+            
+            const switchText = signupForm.querySelector(".auth-switch");
+            if (switchText) {
+                switchText.innerHTML = `لديك حساب بالفعل؟ <a href="#" id="switch-to-login" style="color: var(--neon); text-decoration: none;">تسجيل الدخول</a>`;
+            }
+        }
+
+        // ================= HOMEPAGE STATIC AND PRODUCT CARD TRANSLATIONS =================
+        
+        // 1. Dynamic Product Cards & Title Fallback
+        const productCards = document.querySelectorAll(".product-card");
+        productCards.forEach(card => {
+            const cat = card.querySelector(".card-category");
+            if (cat) {
+                const text = cat.textContent.trim().toLowerCase();
+                if (text === "mice" || text === "الماوسات") cat.textContent = "الماوسات";
+                else if (text === "headsets" || text === "سماعات الرأس") cat.textContent = "سماعات الرأس";
+                else if (text === "controllers" || text === "أجهزة التحكم") cat.textContent = "أجهزة التحكم";
+                else if (text === "gaming chairs" || text === "كراسي القيمنق") cat.textContent = "كراسي القيمنق";
+                else if (text === "keyboards" || text === "لوحات المفاتيح") cat.textContent = "لوحات المفاتيح";
+                else if (text === "monitors" || text === "الشاشات") cat.textContent = "الشاشات";
+                else if (text === "laptops" || text === "لاب توب") cat.textContent = "لاب توب";
+                else if (text === "graphics cards" || text === "كروت الشاشة") cat.textContent = "كروت الشاشة";
+                else if (text === "vr headsets" || text === "نظارات الواقع الافتراضي") cat.textContent = "نظارات الواقع الافتراضي";
+            }
+            
+            const titleEl = card.querySelector(".card-title a") || card.querySelector(".card-title");
+            if (titleEl) {
+                titleEl.textContent = getTranslatedProductTitle(titleEl.textContent);
+            }
+            
+            const badge = card.querySelector(".card-badge");
+            if (badge) {
+                const text = badge.textContent.trim().toUpperCase();
+                if (text === "NEW" || text === "جديد") badge.textContent = "جديد";
+                else if (text === "HOT" || text === "شائع" || text.includes("شائع")) badge.innerHTML = "🔥 شائع";
+                else if (text === "SALE" || text === "تخفيض") badge.textContent = "تخفيض";
+            }
+            
+            const cartBtn = card.querySelector(".btn-cart");
+            if (cartBtn) {
+                const span = cartBtn.querySelector("span");
+                if (span) {
+                    span.textContent = "إضافة للسلة";
+                } else {
+                    cartBtn.textContent = "إضافة للسلة";
+                }
+            }
+        });
+
+        // Translate page main title fallback if present
+        const pageTitleEl = document.querySelector(".p-title");
+        if (pageTitleEl) {
+            pageTitleEl.textContent = getTranslatedProductTitle(pageTitleEl.textContent);
+        }
+
+        // 2. Features Strip
+        const featureItems = document.querySelectorAll(".features-strip .feature-item");
+        const featuresMap = {
+            "free shipping": { title: "شحن مجاني", sub: "على جميع الطلبات بأكثر من $49" },
+            "secure checkout": { title: "دفع آمن ومحمي", sub: "تشفير SSL 256-bit آمن" },
+            "30-day returns": { title: "إرجاع خلال 30 يوماً", sub: "بدون تعقيدات أو أسئلة" },
+            "24/7 support": { title: "دعم متواصل 24/7", sub: "دعم مخصص للاعبين" }
+        };
+        featureItems.forEach(item => {
+            const titleEl = item.querySelector(".feature-text-title");
+            const subEl = item.querySelector(".feature-text-sub");
+            if (titleEl) {
+                const titleText = titleEl.textContent.trim().toLowerCase();
+                if (featuresMap[titleText]) {
+                    titleEl.textContent = featuresMap[titleText].title;
+                    if (subEl) subEl.textContent = featuresMap[titleText].sub;
+                }
+            }
+        });
+
+        // 3. Stats Row
+        const statItems = document.querySelectorAll(".stats-row .stat-item");
+        const statsMap = {
+            "orders shipped": { number: "1000+", label: "طلب تم شحنه" },
+            "satisfaction rate": { number: "98%", label: "نسبة رضا العملاء" },
+            "premium products": { number: "248", label: "منتج مميز" },
+            "partner brands": { number: "60+", label: "علامة تجارية شريكة" }
+        };
+        statItems.forEach(item => {
+            const numEl = item.querySelector(".stat-number");
+            const labelEl = item.querySelector(".stat-label");
+            if (labelEl) {
+                const labelText = labelEl.textContent.trim().toLowerCase();
+                if (statsMap[labelText]) {
+                    labelEl.textContent = statsMap[labelText].label;
+                    if (numEl) numEl.textContent = statsMap[labelText].number;
+                }
+            }
+        });
+
+        // 4. Brands Marquee Label
+        const brandsLabel = document.querySelector(".brands-section .brands-label");
+        if (brandsLabel) {
+            brandsLabel.textContent = "موثوق به من قبل أكثر من 60 علامة تجارية عالمية للألعاب";
+        }
+
+        // 5. Interactive 3D Showroom
+        const showroomSection = document.querySelector(".homepage-showroom-section");
+        if (showroomSection) {
+            const studioSpan = showroomSection.querySelector("span[style*='letter-spacing']");
+            if (studioSpan) {
+                const dot = studioSpan.querySelector("span");
+                studioSpan.innerHTML = "";
+                if (dot) studioSpan.appendChild(dot);
+                studioSpan.appendChild(document.createTextNode(" استوديو الهولوجرام"));
+            }
+            
+            const heading = document.getElementById("showroom-heading");
+            if (heading) {
+                heading.innerHTML = `غرفة العتاد <span>الهولوجرامية 3D</span>`;
+            }
+            
+            const desc = showroomSection.querySelector("p[style*='line-height']");
+            if (desc) {
+                desc.textContent = "تفاعل مع عتاد الألعاب الاحترافي في عرض هولوجرامي كامل بزاوية 360 درجة. يمكنك التدوير، التكبير، تفعيل نقاط المواصفات الساخنة، أو إسقاط صورتك الخاصة لعرضها.";
+            }
+            
+            const sidebarDesc = showroomSection.querySelector(".showroom-desc");
+            if (sidebarDesc) {
+                sidebarDesc.textContent = "اختر أحد الأجهزة الطرفية للجيمنج من القائمة أدناه، أو ارفع صورتك الخاصة. اسحب المجسم على المنصة لتدويره 360 درجة.";
+            }
+            
+            // Labels
+            const controlLabels = showroomSection.querySelectorAll(".showroom-control-label");
+            const labelsMap = {
+                "select specimen": "اختر المجسم المعروض",
+                "project your own gear": "اعرض عتادك الخاص",
+                "hologram laser glow": "توهج ليزر الهولوجرام",
+                "gear zoom / scale": "تكبير وتصغير العتاد"
+            };
+            controlLabels.forEach(label => {
+                const text = label.textContent.trim().toLowerCase();
+                if (labelsMap[text]) {
+                    label.textContent = labelsMap[text];
+                }
+            });
+            
+            // Select buttons
+            const gearSelectBtns = showroomSection.querySelectorAll(".gear-select-btn");
+            gearSelectBtns.forEach(btn => {
+                const text = btn.textContent.trim().toLowerCase();
+                if (text.includes("keyboard") || text.includes("لوحة")) {
+                    btn.textContent = "⌨️ لوحة مفاتيح ميكانيكية";
+                } else if (text.includes("mouse") || text.includes("ماوس")) {
+                    btn.textContent = "🖱️ ماوس قيمنق احترافي";
+                } else if (text.includes("headset") || text.includes("سماعة")) {
+                    btn.textContent = "🎧 سماعة صوت محيطي";
+                } else if (text.includes("controller") || text.includes("يد")) {
+                    btn.textContent = "🎮 يد تحكم احترافية";
+                } else if (text.includes("vr") || text.includes("نظارة")) {
+                    btn.textContent = "🥽 نظارة واقع افتراضي حديثة";
+                }
+            });
+            
+            // Upload Box text
+            const uploadBoxText = showroomSection.querySelector(".upload-gear-box p");
+            if (uploadBoxText) {
+                uploadBoxText.textContent = "اسحب الصورة هنا أو اضغط للرفع";
+            }
+        }
+
+        // 6. Newsletter Section
+        const newsletterSection = document.querySelector(".newsletter-section");
+        if (newsletterSection) {
+            const eyebrow = newsletterSection.querySelector(".newsletter-eyebrow");
+            if (eyebrow) {
+                const dot = eyebrow.querySelector(".nl-dot");
+                eyebrow.innerHTML = "";
+                if (dot) eyebrow.appendChild(dot);
+                eyebrow.appendChild(document.createTextNode(" للأعضاء فقط"));
+            }
+            
+            const title = document.getElementById("nl-heading");
+            if (title) {
+                title.innerHTML = `ارتقِ بمستوى <span>عتادك وألعابك</span>`;
+            }
+            
+            const sub = newsletterSection.querySelector(".newsletter-sub");
+            if (sub) {
+                sub.textContent = "انضم إلى أكثر من 180,000 لاعب يحصلون على عروض حصرية، وصول مبكر للمنتجات الجديدة، وأدلة إعدادات المحترفين مباشرة في بريدهم الوارد.";
+            }
+            
+            const input = newsletterSection.querySelector("input[name='email']");
+            if (input) {
+                input.placeholder = "أدخل بريدك الإلكتروني…";
+            }
+            
+            const submitBtn = newsletterSection.querySelector("button[type='submit']");
+            if (submitBtn) {
+                submitBtn.textContent = "اشتراك";
+            }
+            
+            const note = newsletterSection.querySelector(".newsletter-note");
+            if (note) {
+                note.textContent = "بدون رسائل مزعجة. إلغاء الاشتراك في أي وقت.";
+            }
+            
+            const perks = newsletterSection.querySelectorAll(".nl-perk");
+            perks.forEach(perk => {
+                const icon = perk.querySelector(".nl-perk-icon");
+                const text = perk.textContent.replace("✓", "").trim().toLowerCase();
+                let arText = "";
+                if (text.includes("early access")) arText = "وصول مبكر للمنتجات الحصرية";
+                else if (text.includes("discounts")) arText = "خصومات خاصة بالأعضاء";
+                else if (text.includes("setup guides")) arText = "أدلة مجانية لإعداد المنصة";
+                else if (text.includes("pro player")) arText = "اختيارات اللاعبين المحترفين";
+                
+                if (arText) {
+                    perk.innerHTML = "";
+                    if (icon) perk.appendChild(icon);
+                    perk.appendChild(document.createTextNode(" " + arText));
+                }
+            });
+        }
+
+        // 7. Rich Footer
+        const siteFooter = document.querySelector(".site-footer");
+        if (siteFooter) {
+            const brandDesc = siteFooter.querySelector(".footer-brand-desc");
+            if (brandDesc) {
+                brandDesc.textContent = "الوجهة الأولى للاعبين المحترفين وعشاق التكنولوجيا. عتاد مختار بعناية، أسعار لا تقبل المنافسة، ودعم عملاء فائق الجودة.";
+            }
+            
+            // Col Titles
+            const colTitles = siteFooter.querySelectorAll(".footer-col-title");
+            const footerTitlesMap = {
+                "shop": "المتجر",
+                "support": "الدعم الفني",
+                "company": "الشركة"
+            };
+            colTitles.forEach(title => {
+                const text = title.textContent.trim().toLowerCase();
+                if (footerTitlesMap[text]) {
+                    title.textContent = footerTitlesMap[text];
+                }
+            });
+            
+            // Links
+            const footerLinks = siteFooter.querySelectorAll(".footer-links a");
+            const footerLinksMap = {
+                "new arrivals": "وصل حديثاً",
+                "best sellers": "الأكثر مبيعاً",
+                "controllers": "أجهزة التحكم",
+                "headsets": "سماعات الرأس",
+                "keyboards": "لوحات المفاتيح",
+                "monitors": "الشاشات",
+                "deals & bundles": "العروض والحزم",
+                "help center": "مركز المساعدة",
+                "track my order": "تتبع طلبي",
+                "returns & refunds": "المرتجع والمسترد",
+                "warranty claims": "طلبات الضمان",
+                "contact us": "اتصل بنا",
+                "community forum": "منتدى المجتمع",
+                "about neontech": "حول نيون تك",
+                "careers": "الوظائف",
+                "press kit": "الصحافة والإعلام",
+                "affiliate program": "التسويق بالعمولة",
+                "brand partnerships": "شراكات العلامات التجارية"
+            };
+            footerLinks.forEach(link => {
+                let tag = link.querySelector(".new-tag");
+                let text = link.textContent.replace("New", "").trim().toLowerCase();
+                if (footerLinksMap[text]) {
+                    link.innerHTML = footerLinksMap[text];
+                    if (tag) {
+                        tag.textContent = "جديد";
+                        link.appendChild(document.createTextNode(" "));
+                        link.appendChild(tag);
+                    }
+                }
+            });
+            
+            // Bottom Footer
+            const footerCopy = siteFooter.querySelector(".footer-copy");
+            if (footerCopy) {
+                footerCopy.innerHTML = `&copy; 2026 نيون تك &mdash; تم التطوير بواسطة <a href="https://salahkhaled.com" target="_blank" rel="noopener noreferrer" style="color: var(--neon); text-decoration: none; font-weight: 600; transition: opacity 0.3s;">صلاح خالد</a>`;
+            }
+            
+            const bottomLinks = siteFooter.querySelectorAll(".footer-bottom-links a");
+            bottomLinks.forEach(link => {
+                const text = link.textContent.trim().toLowerCase();
+                if (text.includes("privacy")) link.textContent = "سياسة الخصوصية";
+                else if (text.includes("terms")) link.textContent = "شروط الخدمة";
+                else if (text.includes("cookie")) link.textContent = "إعدادات الكوكيز";
+            });
+            
+            const payBadges = siteFooter.querySelectorAll(".footer-payments .pay-badge");
+            payBadges.forEach(badge => {
+                const text = badge.textContent.trim().toUpperCase();
+                if (text === "VISA") badge.textContent = "فيزا";
+                else if (text === "MC") badge.textContent = "ماستر كارد";
+                else if (text === "AMEX") badge.textContent = "أمكس";
+                else if (text === "PAYPAL") badge.textContent = "بايبال";
+                else if (text === "CRYPTO") badge.textContent = "عملات رقمية";
+            });
+        }
+
+        // 8. Cart Summary Row Translations inside Drawer
+        const cartDrawer = document.getElementById("cart-drawer");
+        if (cartDrawer) {
+            const rows = cartDrawer.querySelectorAll(".cart-summary-row, .cart-total-row");
+            rows.forEach(row => {
+                const labelEl = row.querySelector("span:first-child");
+                if (labelEl) {
+                    const text = labelEl.textContent.trim().toLowerCase();
+                    if (text === "subtotal" || text === "المجموع الفرعي") {
+                        labelEl.textContent = "المجموع الفرعي";
+                    } else if (text === "shipping" || text === "الشحن") {
+                        labelEl.textContent = "الشحن";
+                    } else if (text === "total" || text === "المجموع الكلي") {
+                        labelEl.textContent = "المجموع الكلي";
+                    }
+                }
+                const valEl = row.querySelector(".text-neon");
+                if (valEl && (valEl.textContent.trim().toLowerCase() === "free" || valEl.textContent.trim() === "مجاني")) {
+                    valEl.textContent = "مجاني";
+                }
+            });
+        }
+    }
+    
+    // Support Bot language update
+    if (typeof window.renderChatbot === 'function') {
+        window.renderChatbot();
+    }
+}
+
+// 3. Initialize Bilingual Header Switcher Button
+function initBilingualSwitcher() {
+    const navActions = document.querySelector(".nav-actions");
+    if (!navActions) return;
+    
+    if (document.querySelector(".lang-switcher-btn")) return;
+    
+    const activeLang = localStorage.getItem("neontech_lang") || "en";
+    
+    const switcherBtn = document.createElement("button");
+    switcherBtn.className = "nav-btn lang-switcher-btn";
+    switcherBtn.style.fontFamily = "monospace";
+    switcherBtn.style.fontSize = "0.95rem";
+    switcherBtn.style.fontWeight = "bold";
+    switcherBtn.style.color = "var(--neon)";
+    switcherBtn.style.border = "1px solid var(--neon)";
+    switcherBtn.style.background = "transparent";
+    switcherBtn.style.padding = "5px 10px";
+    switcherBtn.style.borderRadius = "4px";
+    switcherBtn.style.cursor = "pointer";
+    switcherBtn.style.transition = "all 0.3s ease";
+    switcherBtn.style.marginRight = "10px";
+    switcherBtn.style.display = "inline-flex";
+    switcherBtn.style.alignItems = "center";
+    switcherBtn.style.boxShadow = "0 0 10px rgba(0, 255, 135, 0.1)";
+    
+    switcherBtn.textContent = activeLang === "en" ? "AR" : "EN";
+    
+    switcherBtn.addEventListener("mouseover", () => {
+        switcherBtn.style.boxShadow = "0 0 15px var(--neon)";
+        switcherBtn.style.background = "rgba(0, 255, 135, 0.1)";
+    });
+    
+    switcherBtn.addEventListener("mouseleave", () => {
+        switcherBtn.style.boxShadow = "0 0 10px rgba(0, 255, 135, 0.1)";
+        switcherBtn.style.background = "transparent";
+    });
+    
+    switcherBtn.addEventListener("click", () => {
+        const currentLang = localStorage.getItem("neontech_lang") || "en";
+        const newLang = currentLang === "en" ? "ar" : "en";
+        localStorage.setItem("neontech_lang", newLang);
+        switcherBtn.textContent = newLang === "en" ? "AR" : "EN";
+        
+        if (newLang === "en") {
+            window.location.reload();
+        } else {
+            translatePage(newLang);
+            showNeonToast(
+                "🌐 تغيير اللغة",
+                "تم تحويل لغة الموقع إلى العربية بنجاح."
+            );
+        }
+    });
+    
+    navActions.insertBefore(switcherBtn, navActions.firstChild);
+    
+    // Translate immediately on page load
+    translatePage(activeLang);
+}
+
+// 4. Initialize Interactive Reviews Tab Form
+function initInteractiveReviews() {
+    const reviewsContent = document.querySelector(".reviews-content");
+    if (!reviewsContent) return;
+    
+    if (document.getElementById("write-review-form-container")) return;
+    
+    const productTitle = document.querySelector(".p-title")?.textContent.trim() || document.title.split("—")[0].trim();
+    const reviewsStorageKey = `neontech_reviews_${productTitle.replace(/\s+/g, "_").toLowerCase()}`;
+    
+    const formContainer = document.createElement("div");
+    formContainer.id = "write-review-form-container";
+    formContainer.className = "write-review-section";
+    formContainer.style.marginTop = "30px";
+    formContainer.style.borderTop = "1px solid var(--border-subtle)";
+    formContainer.style.paddingTop = "25px";
+    
+    const activeLang = localStorage.getItem("neontech_lang") || "en";
+    
+    formContainer.innerHTML = `
+        <h3 class="write-review-title" style="font-family: monospace; font-size: 1.2rem; color: var(--text-primary); margin-bottom: 20px;">
+            ${activeLang === "ar" ? "اكتب تقييمًا" : "WRITE A REVIEW"}
+        </h3>
+        <form id="write-review-form" style="display: flex; flex-direction: column; gap: 15px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-weight: bold; color: var(--text-secondary);">${activeLang === "ar" ? "تقييمك بالنجوم:" : "Your Rating:"}</span>
+                <div class="stars review-stars-selector" style="font-size: 1.5rem; display: inline-flex; gap: 5px;">
+                    <span class="star" data-rating="1" style="cursor: pointer;">&#9733;</span>
+                    <span class="star" data-rating="2" style="cursor: pointer;">&#9733;</span>
+                    <span class="star" data-rating="3" style="cursor: pointer;">&#9733;</span>
+                    <span class="star" data-rating="4" style="cursor: pointer;">&#9733;</span>
+                    <span class="star" data-rating="5" style="cursor: pointer;">&#9733;</span>
+                </div>
+                <input type="hidden" id="review-rating-value" value="0" />
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <input type="text" id="review-author" placeholder="${activeLang === "ar" ? "اسمك الكريم" : "Your Name"}" required style="padding: 10px 15px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-primary);" />
+                <input type="text" id="review-title" placeholder="${activeLang === "ar" ? "عنوان المراجعة (مثال: أداء جبار!)" : "Review Title (e.g., Ultimate performance!)"}" required style="padding: 10px 15px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-primary);" />
+            </div>
+            
+            <textarea id="review-text" rows="4" placeholder="${activeLang === "ar" ? "شاركنا تجربتك للأداة الجيمنج..." : "Share your experience with this gaming gear..."}" required style="padding: 10px 15px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-primary); resize: vertical;"></textarea>
+            
+            <button type="submit" class="btn-primary" style="align-self: flex-start; padding: 12px 30px; font-weight: bold; cursor: pointer;">
+                ${activeLang === "ar" ? "إرسال التقييم" : "Submit Review"}
+            </button>
+        </form>
+    `;
+    
+    reviewsContent.appendChild(formContainer);
+    
+    // Auto-fill review author with logged in name
+    if (supabaseClient) {
+        supabaseClient.auth.getUser().then(({ data: { user } }) => {
+            if (user) {
+                const name = user.user_metadata?.display_name || user.email.split('@')[0];
+                const authorInput = document.getElementById("review-author");
+                if (authorInput) {
+                    authorInput.value = name;
+                    authorInput.readOnly = true;
+                    authorInput.style.opacity = "0.7";
+                }
+            }
+        });
+    }
+    
+    const starsSelector = formContainer.querySelectorAll(".review-stars-selector .star");
+    const ratingValueInput = document.getElementById("review-rating-value");
+    
+    starsSelector.forEach(star => {
+        star.addEventListener("click", function() {
+            const rating = parseInt(this.getAttribute("data-rating"));
+            ratingValueInput.value = rating;
+            
+            starsSelector.forEach(s => {
+                const sRating = parseInt(s.getAttribute("data-rating"));
+                if (sRating <= rating) {
+                    s.classList.add("glow");
+                } else {
+                    s.classList.remove("glow");
+                }
+            });
+        });
+    });
+    
+    const reviewsList = reviewsContent.querySelector(".reviews-list");
+    if (reviewsList) {
+        let savedReviews = [];
+        try {
+            savedReviews = JSON.parse(localStorage.getItem(reviewsStorageKey)) || [];
+        } catch (e) {
+            console.warn(e);
+        }
+        
+        savedReviews.forEach(rev => {
+            prependReviewDOM(reviewsList, rev);
+        });
+    }
+    
+    const form = document.getElementById("write-review-form");
+    form.addEventListener("submit", function(e) {
+        e.preventDefault();
+        
+        const rating = parseInt(ratingValueInput.value);
+        if (rating === 0) {
+            showNeonToast(
+                activeLang === "ar" ? "⚠️ اختيار التقييم" : "⚠️ Select Rating",
+                activeLang === "ar" ? "يرجى تحديد التقييم بالنجوم أولاً!" : "Please select a star rating first!"
+            );
+            return;
+        }
+        
+        const author = document.getElementById("review-author").value.trim();
+        const title = document.getElementById("review-title").value.trim();
+        const text = document.getElementById("review-text").value.trim();
+        const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        
+        const newReview = {
+            author: author,
+            title: title,
+            text: text,
+            rating: rating,
+            date: date
+        };
+        
+        let savedReviews = [];
+        try {
+            savedReviews = JSON.parse(localStorage.getItem(reviewsStorageKey)) || [];
+        } catch (err) {
+            console.warn(err);
+        }
+        savedReviews.push(newReview);
+        localStorage.setItem(reviewsStorageKey, JSON.stringify(savedReviews));
+        
+        if (reviewsList) {
+            prependReviewDOM(reviewsList, newReview);
+        }
+        
+        updateReviewsAggregate(rating);
+        
+        form.reset();
+        starsSelector.forEach(s => s.classList.remove("glow"));
+        ratingValueInput.value = "0";
+        
+        // Expose username if active session
+        if (supabaseClient) {
+            supabaseClient.auth.getUser().then(({ data: { user } }) => {
+                if (user) {
+                    const name = user.user_metadata?.display_name || user.email.split('@')[0];
+                    const authorInput = document.getElementById("review-author");
+                    if (authorInput) authorInput.value = name;
+                }
+            });
+        }
+        
+        showNeonToast(
+            activeLang === "ar" ? "🎉 تم النشر" : "🎉 Review Published",
+            activeLang === "ar" ? "شكرًا لك! تم نشر مراجعتك بنجاح." : "Thank you! Your review has been published successfully."
+        );
+    });
+}
+
+function prependReviewDOM(reviewsList, review) {
+    let starsHTML = "";
+    for (let i = 1; i <= 5; i++) {
+        if (i <= review.rating) {
+            starsHTML += '<span class="star filled">&#9733;</span>';
+        } else {
+            starsHTML += '<span class="star">&#9733;</span>';
+        }
+    }
+    
+    const reviewItem = document.createElement("div");
+    reviewItem.className = "review-item";
+    reviewItem.style.borderLeft = "2px solid var(--neon)";
+    reviewItem.style.paddingLeft = "15px";
+    
+    reviewItem.innerHTML = `
+        <div class="review-header">
+            <div>
+                <span class="author-name" style="font-weight: bold; color: var(--text-primary);">${review.author}</span>
+                <span class="badge-verified" style="margin-left: 8px; font-size: 0.75rem; color: var(--neon); background: rgba(0,255,135,0.1); padding: 2px 6px; border-radius: 4px;">Verified Buyer</span>
+            </div>
+            <span class="review-date" style="font-size: 0.85rem; color: var(--text-secondary);">${review.date}</span>
+        </div>
+        <div class="stars" style="margin: 8px 0;">
+            ${starsHTML}
+        </div>
+        <h4 class="review-title" style="margin: 8px 0; color: var(--text-primary); font-size: 1.05rem;">${review.title}</h4>
+        <p class="review-text" style="color: var(--text-secondary); line-height: 1.6; margin: 0;">${review.text}</p>
+    `;
+    
+    reviewsList.insertBefore(reviewItem, reviewsList.firstChild);
+}
+
+function updateReviewsAggregate(newRating) {
+    const scoreNumEl = document.querySelector(".score-number");
+    const scoreSubEl = document.querySelector(".score-sub");
+    if (!scoreNumEl || !scoreSubEl) return;
+    
+    let currentScore = parseFloat(scoreNumEl.textContent);
+    let countMatch = scoreSubEl.textContent.match(/[\d,]+/);
+    if (!countMatch) return;
+    
+    let currentCount = parseInt(countMatch[0].replace(/,/g, ""));
+    let newCount = currentCount + 1;
+    let newScore = ((currentScore * currentCount) + newRating) / newCount;
+    
+    scoreNumEl.textContent = newScore.toFixed(1);
+    scoreSubEl.textContent = `Based on ${newCount.toLocaleString()} verified buyer ratings`;
+    
+    const scoreStarsEl = document.querySelector(".score-box .stars");
+    if (scoreStarsEl) {
+        scoreStarsEl.innerHTML = renderStarsHTML(newScore);
+    }
+}
+
+// 5. Cart Account Syncing Utility
+window.syncUserCart = function(user) {
+    if (!user) {
+        // Clear active cart on logout
+        if (typeof window.setCart === 'function') {
+            window.setCart([]);
+        }
+        localStorage.removeItem('neontech_cart');
+        return;
+    }
+    
+    const userCartKey = `sb-${user.id}-cart`;
+    let userCart = [];
+    try {
+        userCart = JSON.parse(localStorage.getItem(userCartKey)) || [];
+    } catch (e) {
+        console.warn("Error parsing user cart:", e);
+    }
+    
+    let anonCart = [];
+    try {
+        anonCart = JSON.parse(localStorage.getItem('neontech_cart')) || [];
+    } catch (e) {
+        console.warn("Error parsing anonymous cart:", e);
+    }
+    
+    // Merge Strategy
+    let mergedCart = [...userCart];
+    anonCart.forEach(anonItem => {
+        let existing = mergedCart.find(item => item.id === anonItem.id);
+        if (existing) {
+            existing.quantity = Math.min(10, existing.quantity + anonItem.quantity);
+        } else {
+            mergedCart.push(anonItem);
+        }
+    });
+    
+    localStorage.setItem(userCartKey, JSON.stringify(mergedCart));
+    if (typeof window.setCart === 'function') {
+        window.setCart(mergedCart);
+    }
+};
+
+// 6. Interactive Floating Support Chatbot System
+function initSupportChatbot() {
+    if (document.getElementById("neontech-support-chatbot")) return;
+    
+    const botContainer = document.createElement("div");
+    botContainer.id = "neontech-support-chatbot";
+    botContainer.style.position = "fixed";
+    botContainer.style.bottom = "30px";
+    botContainer.style.right = "30px";
+    botContainer.style.zIndex = "10000";
+    botContainer.style.fontFamily = "inherit";
+    
+    botContainer.innerHTML = `
+        <button id="chatbot-toggle-btn" style="width: 60px; height: 60px; border-radius: 50%; background: #080b0f; border: 2px solid var(--neon); color: var(--neon); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 20px var(--neon); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); outline: none;">
+            <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+        </button>
+        
+        <div id="chatbot-window" style="display: none; position: absolute; bottom: 80px; right: 0; width: 350px; height: 480px; background: #0c1017; border: 2px solid var(--border-subtle); border-radius: 12px; box-shadow: 0 0 30px rgba(0,255,135,0.15); flex-direction: column; overflow: hidden; transition: all 0.3s ease;">
+            <div style="background: rgba(0,255,135,0.05); padding: 15px; border-bottom: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--neon); box-shadow: 0 0 10px var(--neon);"></div>
+                    <strong style="color: var(--text-primary); font-size: 0.95rem; font-family: monospace;">NeonTech Assistant v1.2</strong>
+                </div>
+                <button id="chatbot-close-btn" style="background: transparent; border: none; color: var(--text-secondary); font-size: 1.25rem; cursor: pointer;">&times;</button>
+            </div>
+            
+            <div id="chatbot-messages" style="flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem;"></div>
+            
+            <div id="chatbot-options" style="padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; border-top: 1px solid var(--border-subtle); background: rgba(255,255,255,0.01);"></div>
+            
+            <div id="chatbot-input-row" style="display: none; padding: 10px 15px; border-top: 1px solid var(--border-subtle); background: rgba(0,0,0,0.2);">
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="chatbot-text-input" placeholder="Type Order ID..." style="flex: 1; padding: 8px 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 4px; color: var(--text-primary); font-size: 0.8rem;" />
+                    <button id="chatbot-submit-btn" style="background: var(--neon); border: none; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">Send</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(botContainer);
+    
+    const toggleBtn = document.getElementById("chatbot-toggle-btn");
+    const chatWindow = document.getElementById("chatbot-window");
+    const closeBtn = document.getElementById("chatbot-close-btn");
+    
+    toggleBtn.addEventListener("click", () => {
+        const isOpen = chatWindow.style.display === "flex";
+        chatWindow.style.display = isOpen ? "none" : "flex";
+        if (!isOpen) {
+            toggleBtn.style.transform = "scale(0.9) rotate(90deg)";
+            toggleBtn.style.borderColor = "#ff007f";
+            toggleBtn.style.color = "#ff007f";
+            toggleBtn.style.boxShadow = "0 0 20px #ff007f";
+            playNotificationSound();
+        } else {
+            toggleBtn.style.transform = "none";
+            toggleBtn.style.borderColor = "var(--neon)";
+            toggleBtn.style.color = "var(--neon)";
+            toggleBtn.style.boxShadow = "0 0 20px var(--neon)";
+        }
+    });
+    
+    closeBtn.addEventListener("click", () => {
+        chatWindow.style.display = "none";
+        toggleBtn.style.transform = "none";
+        toggleBtn.style.borderColor = "var(--neon)";
+        toggleBtn.style.color = "var(--neon)";
+        toggleBtn.style.boxShadow = "0 0 20px var(--neon)";
+    });
+    
+    window.renderChatbot = function() {
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        const messagesContainer = document.getElementById("chatbot-messages");
+        const optionsContainer = document.getElementById("chatbot-options");
+        const textInput = document.getElementById("chatbot-text-input");
+        const inputRow = document.getElementById("chatbot-input-row");
+        
+        messagesContainer.innerHTML = "";
+        optionsContainer.innerHTML = "";
+        inputRow.style.display = "none";
+        
+        const welcomeText = activeLang === "ar" 
+            ? "مرحباً بك في NeonTech! 🎮 أنا مساعدك الذكي. كيف يمكنني مساندتك اليوم لتطوير عتادك القيمنق؟"
+            : "Welcome to NeonTech! 🎮 I'm your digital support assistant. How can I help you level up your gaming rig today?";
+            
+        appendMessage("bot", welcomeText);
+        
+        const options = activeLang === "ar" ? [
+            { id: "track", text: "📦 تتبع طلبية" },
+            { id: "coupon", text: "🎟️ كود خصم إضافي" },
+            { id: "dpi", text: "⚙️ معايرة الماوس والشاشة" },
+            { id: "salah", text: "💬 تواصل مع المالك (صلاح)" }
+        ] : [
+            { id: "track", text: "📦 Track an Order" },
+            { id: "coupon", text: "🎟️ Extra Promo Code" },
+            { id: "dpi", text: "⚙️ DPI & Refresh Calibrator" },
+            { id: "salah", text: "💬 Chat with Salah (Owner)" }
+        ];
+        
+        options.forEach(opt => {
+            const btn = document.createElement("button");
+            btn.className = "chatbot-opt-btn";
+            btn.style.width = "100%";
+            btn.style.padding = "10px 15px";
+            btn.style.textAlign = activeLang === "ar" ? "right" : "left";
+            btn.style.background = "rgba(255,255,255,0.03)";
+            btn.style.border = "1px solid var(--border-subtle)";
+            btn.style.borderRadius = "6px";
+            btn.style.color = "var(--text-primary)";
+            btn.style.cursor = "pointer";
+            btn.style.transition = "all 0.2s ease";
+            btn.style.fontSize = "0.8rem";
+            
+            btn.addEventListener("mouseover", () => {
+                btn.style.background = "rgba(0, 255, 135, 0.05)";
+                btn.style.borderColor = "var(--neon)";
+            });
+            
+            btn.addEventListener("mouseleave", () => {
+                btn.style.background = "rgba(255,255,255,0.03)";
+                btn.style.borderColor = "var(--border-subtle)";
+            });
+            
+            btn.addEventListener("click", () => {
+                handleOptionClick(opt.id, opt.text);
+            });
+            
+            optionsContainer.appendChild(btn);
+        });
+        
+        textInput.placeholder = activeLang === "ar" ? "أدخل رقم الطلب (مثال #NT-54321)..." : "Type Order ID (e.g. #NT-54321)...";
+    };
+    
+    function appendMessage(sender, text) {
+        const messagesContainer = document.getElementById("chatbot-messages");
+        const bubble = document.createElement("div");
+        bubble.style.padding = "10px 14px";
+        bubble.style.borderRadius = "12px";
+        bubble.style.maxWidth = "80%";
+        bubble.style.lineHeight = "1.5";
+        bubble.style.animation = "fadeIn 0.3s ease forwards";
+        
+        if (sender === "bot") {
+            bubble.style.background = "rgba(255,255,255,0.03)";
+            bubble.style.color = "var(--text-primary)";
+            bubble.style.alignSelf = "flex-start";
+            bubble.style.borderLeft = "2px solid var(--neon)";
+        } else {
+            bubble.style.background = "var(--neon)";
+            bubble.style.color = "#000";
+            bubble.style.fontWeight = "550";
+            bubble.style.alignSelf = "flex-end";
+        }
+        
+        bubble.innerHTML = text;
+        messagesContainer.appendChild(bubble);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+    
+    function handleOptionClick(id, text) {
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        appendMessage("user", text);
+        
+        if (id === "track") {
+            const trackPrompt = activeLang === "ar"
+                ? "سأقوم بتتبع طلبك على الفور! يرجى إدخال رقم الطلب المكون من 5 أرقام (مثال #NT-54321) أدناه:"
+                : "I will track your package right away! Please type your 5-digit Order ID (e.g. #NT-54321) below:";
+            
+            setTimeout(() => {
+                appendMessage("bot", trackPrompt);
+                document.getElementById("chatbot-input-row").style.display = "block";
+                document.getElementById("chatbot-text-input").focus();
+            }, 600);
+        } 
+        else if (id === "coupon") {
+            setTimeout(() => {
+                const couponResponse = activeLang === "ar"
+                    ? `🎟️ مروق عليك يا صديقي! صلاح معطيك كود خصم حصري للقيمنق:<br><br><strong style="font-family: monospace; font-size:1.1rem; color:var(--neon);">SALAH10</strong><br><br>يمنحك 10% خصم إضافي على المجموع الفرعي وجميع المنتجات بالسلة عند المزامنة والتشيك أوت!`
+                    : `🎟️ Got you sorted, buddy! Salah secured an exclusive VIP gaming promo for you:<br><br><strong style="font-family: monospace; font-size:1.1rem; color:var(--neon);">SALAH10</strong><br><br>Gives 10% off on your cart items upon validation & checkout sheet!`;
+                appendMessage("bot", couponResponse);
+                playNotificationSound();
+            }, 600);
+        }
+        else if (id === "dpi") {
+            setTimeout(() => {
+                const dpiResponse = activeLang === "ar"
+                    ? `⚙️ <strong>أداة معايرة الأداء</strong>:<br><br>1. <strong>الماوس (DPI)</strong>: للعب التنافسي (Valorant/CS2) ننصح بـ 800 DPI وحساسية داخلية منخفضة. لـ MOBA ننصح بـ 1600 DPI.<br>2. <strong>الشاشة (Refresh)</strong>: تأكد من ضبط الإعدادات بنظام التشغيل على أقصى هرتز تدعمه شاشتك (مثلاً 240Hz). فعل G-Sync لإنهاء التقطيع!`
+                    : `⚙️ <strong>Performance Calibrator</strong>:<br><br>1. <strong>Mouse DPI</strong>: For competitive shooters (Valorant/CS2), target 800 DPI with low in-game sensitivity. For MOBAs, try 1600 DPI.<br>2. <strong>Monitor Refresh</strong>: Double check your OS adapter settings to ensure you are running at maximum native refresh (e.g., 240Hz). Enable G-Sync to end screen tearing!`;
+                appendMessage("bot", dpiResponse);
+            }, 600);
+        }
+        else if (id === "salah") {
+            setTimeout(() => {
+                const salahResponse = activeLang === "ar"
+                    ? `💬 <strong>أبشر يا غالي!</strong> يمكنك التواصل المباشر مع صلاح خالد (المالك والمهندس):<br><br>📱 جوال / واتساب: <a href="https://wa.me/966500438424" target="_blank" style="color: var(--neon); font-weight:bold;">966500438424+</a><br>📧 بريد: <span style="color:var(--neon);">salah@neontech.com</span><br><br>تواصل في أي وقت لتعديل تجميعتك أو حجز ألعابك!`
+                    : `💬 <strong>Connect with Salah Khaled</strong> (Owner & Lead Engineer):<br><br>📱 Mobile / WhatsApp: <a href="https://wa.me/966500438424" target="_blank" style="color: var(--neon); font-weight:bold;">+966500438424</a><br>📧 Email: <span style="color:var(--neon);">salah@neontech.com</span><br><br>Reach out anytime to calibrate your custom build or secure special reserve orders!`;
+                appendMessage("bot", salahResponse);
+            }, 600);
+        }
+    }
+    
+    const submitBtn = document.getElementById("chatbot-submit-btn");
+    const textInput = document.getElementById("chatbot-text-input");
+    
+    const handleTrackSubmit = () => {
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        const val = textInput.value.trim();
+        if (!val) return;
+        
+        appendMessage("user", val);
+        textInput.value = "";
+        document.getElementById("chatbot-input-row").style.display = "none";
+        
+        const matches = val.match(/\d+/);
+        const orderNum = matches ? matches[0] : "54321";
+        
+        setTimeout(() => {
+            appendMessage("bot", activeLang === "ar" ? "⏳ جاري الاستعلام بقواعد البيانات ومزامنة الشحن..." : "⏳ Querying logistics pipeline and fetching parcel info...");
+            
+            setTimeout(() => {
+                const stages = activeLang === "ar" ? [
+                    "📦 <strong>المرحلة 1: تجهيز الشحنة</strong><br>تمت مراجعة الطلب وتجميع عتاد النيون الخاص بك وجاري تغليفه في مخازننا في الرياض.",
+                    "🚚 <strong>المرحلة 2: قيد التوصيل</strong><br>تم تسليم العبوة لشركة الشحن الشريكة (أرامكس) وهي الآن في طريقها إلى مدينتك.",
+                    "🎮 <strong>المرحلة 3: تم التوصيل!</strong><br>تم تسليم طلبية الجيمنج الخاصة بك للمشتري بنجاح. نتمنى لك فوزاً ساحقاً في اللعبة القادمة!"
+                ] : [
+                    "📦 <strong>Phase 1: Parcel Assembly</strong><br>Your high-end neon gear has been checked, combined, and is being securely packaged at our Riyadh warehouse.",
+                    "🚚 <strong>Phase 2: In Transit</strong><br>Parcel handed over to our shipping partner (Aramex) and is currently en route to your city dispatch station.",
+                    "🎮 <strong>Phase 3: Delivered!</strong><br>Your elite gear was successfully received. Victory is yours! Level up and enjoy the game!"
+                ];
+                
+                const index = parseInt(orderNum) % 3;
+                const result = stages[index];
+                
+                appendMessage("bot", `📋 <strong>Order #NT-${orderNum} Status</strong>:<br><br>${result}`);
+                playNotificationSound();
+            }, 1200);
+            
+        }, 600);
+    };
+    
+    submitBtn.addEventListener("click", handleTrackSubmit);
+    textInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+            handleTrackSubmit();
+        }
+    });
+    
+    window.renderChatbot();
+}
+
+// Global Inits
+initBilingualSwitcher();
+initInteractiveReviews();
+initSupportChatbot();

@@ -1387,7 +1387,7 @@
   <!-- ═══ Stats Row ═════════════════════════════════════════════════ -->
   <section class="stats-row" aria-label="Store statistics">
     <div class="stat-item">
-      <div class="stat-number">2.4M+</div>
+      <div class="stat-number">1000+</div>
       <div class="stat-label">Orders Shipped</div>
     </div>
     <div class="stat-item">
@@ -1689,10 +1689,10 @@
   </div>
   <div class="exit-modal" role="dialog" aria-modal="true" aria-labelledby="exit-modal-title">
     <div class="modal-card">
-      <h2 id="exit-modal-title">استنى رايح فين! 🌟</h2>
-      <p style="margin-top: 10px; opacity: 0.9;">صلاح مروق عليك ومديك كود خصم <strong></strong> بخصم 10% على كل المتجر!</p>
-      <div style="font-family: monospace; font-size: 1.5rem; font-weight: 800; color: #39FF14; background: rgba(57, 255, 20, 0.1); border: 1px dashed #39FF14; padding: 10px; border-radius: 8px; margin-top: 15px; letter-spacing: 2px;">SALAH10</div>
-      <button class="close-btn" aria-label="خلاص هشتري">خلاص هشتري</button>
+      <h2 id="exit-modal-title"> Don't Leave Yet 🌟</h2>
+      <p style="margin-top: 10px; opacity: 0.9;">You Have A Discount Code <strong></strong> You Will Get 10% Off On Your Total Purchase!</p>
+      <div style="font-family: monospace; font-size: 1.5rem; font-weight: 800; color: #39FF14; background: rgba(57, 255, 20, 0.1); border: 1px dashed #39FF14; padding: 10px; border-radius: 8px; margin-top: 15px; letter-spacing: 2px;">GAMERS10</div>
+      <button class="close-btn" aria-label="I'll buy">I'll buy</button>
     </div>
   </div>
 
@@ -2294,7 +2294,12 @@
             hotspotsContainer.appendChild(hotspot);
           });
 
-          showNeonToast("⚡ Custom Gear Projected", "Holographic custom peripheral loaded on podium!");
+          const activeLang = localStorage.getItem("neontech_lang") || "en";
+          if (activeLang === "ar") {
+              showNeonToast("⚡ تم عرض العتاد المخصص", "تم تحميل عتاد الألعاب المخصص الخاص بك بنجاح على منصة العرض!");
+          } else {
+              showNeonToast("⚡ Custom Gear Projected", "Holographic custom peripheral loaded on podium!");
+          }
         };
         reader.readAsDataURL(file);
       }
@@ -2331,7 +2336,12 @@
         gridFloor.style.backgroundImage = `linear-gradient(${color}22 1px, transparent 1px), linear-gradient(90deg, ${color}22 1px, transparent 1px)`;
         rays.style.background = `linear-gradient(to top, ${color}33 0%, transparent 100%)`;
         
-        showNeonToast("🎨 Hologram Synced", "Hologram laser wavelength color calibrated.");
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        if (activeLang === "ar") {
+            showNeonToast("🎨 تم مزامنة الهولوجرام", "تم معايرة الطول الموجي للون ليزر الهولوجرام بنجاح.");
+        } else {
+            showNeonToast("🎨 Hologram Synced", "Hologram laser wavelength color calibrated.");
+        }
       }
     })();
   </script>

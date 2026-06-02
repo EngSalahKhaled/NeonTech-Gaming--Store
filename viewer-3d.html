@@ -459,7 +459,12 @@
         });
 
         // Feedback toast
-        showNeonToast("⚡ Custom Gear Projected", "Holographic custom peripheral loaded on podium!");
+        const activeLang = localStorage.getItem("neontech_lang") || "en";
+        if (activeLang === "ar") {
+            showNeonToast("⚡ تم عرض العتاد المخصص", "تم تحميل عتاد الألعاب المخصص الخاص بك بنجاح على منصة العرض!");
+        } else {
+            showNeonToast("⚡ Custom Gear Projected", "Holographic custom peripheral loaded on podium!");
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -500,7 +505,12 @@
       // Update hologram rays
       rays.style.background = `linear-gradient(to top, ${color}33 0%, transparent 100%)`;
       
-      showNeonToast("🎨 Hologram Synced", "Hologram laser wavelength color calibrated.");
+      const activeLang = localStorage.getItem("neontech_lang") || "en";
+      if (activeLang === "ar") {
+          showNeonToast("🎨 تم مزامنة الهولوجرام", "تم معايرة الطول الموجي للون ليزر الهولوجرام بنجاح.");
+      } else {
+          showNeonToast("🎨 Hologram Synced", "Hologram laser wavelength color calibrated.");
+      }
     }
   </script>
 </body>

@@ -284,6 +284,42 @@ body::before {
 
 .nav-btn svg { width: 18px; height: 18px; position: relative; z-index: 2; }
 
+/* ── WhatsApp Support Button ──────────────────────────────────── */
+.whatsapp-btn {
+  color: #25d366;
+  border-color: rgba(37, 211, 102, 0.3);
+  background: rgba(37, 211, 102, 0.06);
+  position: relative;
+}
+
+.whatsapp-btn::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 12px;
+  border: 1px solid rgba(37, 211, 102, 0.4);
+  animation: wa-pulse 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes wa-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%       { opacity: 0;   transform: scale(1.22); }
+}
+
+.whatsapp-btn:hover {
+  background: rgba(37, 211, 102, 0.15) !important;
+  border-color: #25d366 !important;
+  color: #25d366 !important;
+  box-shadow: 0 0 12px rgba(37,211,102,0.55), 0 0 28px rgba(37,211,102,0.2) !important;
+}
+
+.whatsapp-btn svg {
+  width: 19px;
+  height: 19px;
+  filter: drop-shadow(0 0 4px rgba(37, 211, 102, 0.5));
+}
+
 .cart-badge {
   position: absolute;
   top: -5px; right: -5px;

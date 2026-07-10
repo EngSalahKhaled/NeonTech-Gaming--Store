@@ -16,7 +16,7 @@
 
 ## 🎬 Live Demo
 
-🔗 **[Visit NeonTech Live](#)** *(Add your Netlify URL here after deployment)*
+🔗 **[Visit NeonTech Live](https://neontech-gaming.netlify.app)**
 
 ---
 
